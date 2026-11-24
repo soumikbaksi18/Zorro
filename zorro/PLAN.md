@@ -235,7 +235,21 @@ prices       ts, zec_usd, usd_inr   (short rolling window, for chart and trigger
 
 ---
 
-## 13. Decisions needed before building
+## 13. Brand
+
+- **Logo:** [`brand/zorro-logo.png`](brand/zorro-logo.png), a low-poly masked fox (1254×1254, black background).
+- **Palette (approximate, taken from the logo):**
+  - Fox purple `#8A3FC8`, light `#B86AE6`, dark `#5B2491`
+  - Accent green `#6CC24A`, dark `#2E8B3A`
+  - Gold `#E9B33B`
+  - Off-white `#F1EEF5`
+  - Background `#0A0A0A`
+- **App theme:** dark by default, purple for main actions. Green and red keep their usual price meaning (up and down), and gold is for alerts and notifications.
+- **Small sizes:** the scar and earrings disappear below ~64 px, so make a simplified mark (ears, mask, white muzzle only) for the favicon and notification badge.
+
+---
+
+## 14. Decisions needed before building
 
 1. **Deadline and team size.** These set how much of "Later" we attempt.
 2. **Stablecoin chains for v1.** Recommendation: USDC on Base and on Solana only.
