@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bot, Globe, Link2, Server, Sparkles } from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { SystemStatus } from "./SystemStatus";
+import { DemoPanel } from "./DemoPanel";
 
 export const metadata: Metadata = { title: "Settings · Zorro" };
 
@@ -28,8 +29,8 @@ const VISIBILITY = [
   },
   {
     icon: Bot,
-    title: "Bots (coming soon)",
-    body: "Can only trade within your signed policy and can only send funds to addresses you list. You can freeze them or revoke Zorro's access anytime.",
+    title: "Bots",
+    body: "Run on Zorro's worker and trade only within your signed policy; funds can only leave to addresses you list. Paper bots only ever ask for quotes.",
   },
 ];
 
@@ -45,6 +46,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-6">
           <SettingsPanel />
           <SystemStatus />
+          <DemoPanel />
         </div>
 
         <section className="panel p-5" aria-labelledby="trust-heading">

@@ -5,6 +5,7 @@ import { count } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { network, whoami } from "./agent-api";
 import { aiConfigured, aiPing } from "./ai";
+import { workerHeartbeat } from "./bots/runner";
 import { encryptionConfigured } from "./crypto";
 import { getTokens } from "./oneclick";
 
@@ -18,6 +19,7 @@ export type HealthReport = {
     swaps: Check & { keyConfigured: boolean };
     agentApi: Check & { keyValid: boolean; ownerTypes: string[] };
     ai: Check & { configured: boolean };
+    worker: Check;
   };
 };
 
@@ -69,6 +71,13 @@ export async function runHealthChecks(): Promise<HealthReport> {
     })(),
   ]);
 
+  const beat = await workerHeartbeat().catch(() => null);
+  const ageSec = beat ? Math.round((Date.now() - new Date(beat).getTime()) / 1000) : null;
+  const worker: Check =
+    ageSec !== null && ageSec < 90
+      ? { ok: true, detail: `Running (last tick ${ageSec}s ago)` }
+      : { ok: false, detail: ageSec === null ? "Not running. Start it with npm run worker" : `Stopped ${ageSec}s ago. Start it with npm run worker` };
+
   const encryption: Check = encryptionConfigured()
     ? { ok: true, detail: "Key loaded" }
     : { ok: false, detail: "ZORRO_ENCRYPTION_KEY missing or invalid" };
@@ -79,6 +88,7 @@ export async function runHealthChecks(): Promise<HealthReport> {
     swaps: { ...swaps, keyConfigured: Boolean(process.env.ONECLICK_API_KEY) },
     agentApi,
     ai,
+    worker,
   };
   return { ok: Object.values(checks).every((c) => c.ok), checkedAt: new Date().toISOString(), checks };
 }

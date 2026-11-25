@@ -7,6 +7,7 @@ const ROWS: { key: keyof HealthReport["checks"]; label: string }[] = [
   { key: "swaps", label: "Swaps (NEAR Intents)" },
   { key: "agentApi", label: "Bot wallets (Agent API)" },
   { key: "ai", label: "AI assistant" },
+  { key: "worker", label: "Bot worker" },
   { key: "database", label: "Database" },
   { key: "encryption", label: "Encryption" },
 ];

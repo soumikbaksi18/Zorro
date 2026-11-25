@@ -96,7 +96,23 @@ export type PreparedIntent = {
   expiresAt: string;
 };
 
-async function activeAgentFor(userId: string) {
+/** The user's active bot wallet and Zorro's grant token for it (decrypted, server memory only). */
+export async function agentWithGrant(user: CurrentUser) {
+  const agent = await activeAgentFor(user.id);
+  if (!agent || agent.status !== "ACTIVE") throw new AgentError("Create your bot wallet first.", 409);
+  const [grant] = await db
+    .select()
+    .from(schema.grants)
+    .where(eq(schema.grants.agentId, agent.id))
+    .orderBy(desc(schema.grants.createdAt))
+    .limit(1);
+  if (!grant || grant.revokedAt || grant.expiresAt < new Date()) {
+    throw new AgentError("Zorro's bot permission is missing or expired.", 409);
+  }
+  return { agent, grantToken: decryptSecret(grant.tokenCiphertext, agent.id) };
+}
+
+export async function activeAgentFor(userId: string) {
   const [agent] = await db
     .select()
     .from(schema.agents)

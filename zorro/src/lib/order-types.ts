@@ -10,6 +10,8 @@ export type BotType = {
   how: string;
   icon: LucideIcon;
   phase: number; // build phase in PLAN.md §8
+  /** Bot kinds this card can create today (anchor on /bots/new). */
+  create?: "stop_loss" | "smart_dca";
 };
 
 export const BOT_TYPES: BotType[] = [
@@ -20,6 +22,7 @@ export const BOT_TYPES: BotType[] = [
     how: "Zorro watches the price 24/7 and sells through NEAR Intents the moment your rule triggers.",
     icon: ShieldAlert,
     phase: 6,
+    create: "stop_loss",
   },
   {
     key: "smart-dca",
@@ -28,6 +31,7 @@ export const BOT_TYPES: BotType[] = [
     how: "Buys on schedule from your bot wallet, and a little more when price is below its average.",
     icon: Repeat,
     phase: 6,
+    create: "smart_dca",
   },
   {
     key: "tp-ladder",

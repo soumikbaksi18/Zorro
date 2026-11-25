@@ -153,6 +153,13 @@ export const botEvents = sqliteTable(
   (t) => [index("bot_events_bot_at_idx").on(t.botId, t.at)],
 );
 
+/** Small app-wide settings, e.g. the demo-mode price override. */
+export const appState = sqliteTable("app_state", {
+  key: text("key").primaryKey(),
+  value: text("value", { mode: "json" }).$type<unknown>(),
+  updatedAt: updatedAt(),
+});
+
 /**
  * Every money action sent to the Agent API. The Idempotency-Key makes retries
  * safe: after a crash we resend with the same key instead of trading twice.

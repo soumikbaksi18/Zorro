@@ -39,7 +39,20 @@ Built for the Zcash India "Build on Zcash" bounty. See [PLAN.md](PLAN.md) for th
 - Grant token encrypted at rest (bound to its agent), only its SHA-256 sent to NEAR; "Test permission" proves it with a dry-run quote
 - Verified end to end on mainnet with a virtual passkey: agent ACTIVE in ~15 s, grant accepted
 
-Next: Phase 5, funding the bot wallet, balances and withdrawals.
+**Phase 5 (fund & withdraw): built, real-funds test pending**
+- One-time NEAR Intents deposit addresses for ZEC, USDC on Base and USDC on Solana, with QR and "Open in wallet" links and live status
+- Live balances (valued at NEAR Intents prices) and today's budget usage
+- Withdrawals only to the addresses in the signed limits, with a fee preview first
+- Every money action is stored with its Idempotency-Key before sending, so retries never double-send
+
+**Phase 6 (bot engine): built, real live-trade test pending**
+- Strategies as pure, unit-tested functions: stop-loss, trailing stop, Smart DCA (with dip boost)
+- Paper mode: real NEAR Intents quotes, no money moved. Live mode: trades within the signed policy
+- Worker (`npm run worker`): checks quote warnings before any live trade and pauses instead of sending a doomed one; one trade per wallet at a time; uncertain trades are polled, never resent under a new key
+- Bot pages with live trigger distance, DCA stats, pause/resume/stop and an activity log
+- Demo mode (`ZORRO_DEMO_MODE=1`, development only): set a fake price in Settings to show a bot triggering
+
+Next: one small real deposit, live trade and withdrawal; then Phase 7 (take-profit ladder, grid).
 
 ## Run locally
 
@@ -50,6 +63,7 @@ cp .env.example .env.local   # fill in the keys (see comments in the file)
 npm install
 npm run db:migrate           # creates data/zorro.db
 npm run dev                  # http://localhost:3000
+npm run worker               # in a second terminal: runs the bots
 ```
 
 Set `ZORRO_ENCRYPTION_KEY` to 32 random bytes, e.g. `openssl rand -base64 32`.

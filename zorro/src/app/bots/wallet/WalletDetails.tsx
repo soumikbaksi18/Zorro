@@ -7,6 +7,8 @@ import { shortAddress } from "@/lib/addresses";
 import { checkBotPermission, signOut, useAccount } from "@/lib/account-client";
 import { CopyButton } from "@/components/ui";
 import { PasskeyGate } from "@/components/bots/PasskeyGate";
+import { ActivityList } from "@/components/bots/ActivityList";
+import { BalancesPanel } from "@/components/bots/BalancesPanel";
 
 const CHAIN_LABEL: Record<string, string> = { zec: "Zcash", base: "Base", sol: "Solana" };
 
@@ -43,23 +45,11 @@ export function WalletDetails() {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="panel-hero p-5">
-        <div className="flex items-start justify-between gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl border border-line text-fox-light">
-            <Wallet size={20} strokeWidth={1.6} aria-hidden="true" />
-          </span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              agent.status === "ACTIVE" ? "bg-up/15 text-up" : "bg-gold/15 text-gold"
-            }`}
-          >
-            {agent.status === "ACTIVE" ? "Active" : agent.status}
-          </span>
-        </div>
-        <p className="eyebrow mt-4">Funding</p>
-        <p className="mt-2 text-xl font-light tracking-[-0.02em]">Not funded yet</p>
-        <p className="mt-2 text-xs text-muted">Depositing ZEC or USDC and live balances arrive in the next update.</p>
-      </section>
+      {agent.status === "ACTIVE" ? (
+        <BalancesPanel />
+      ) : (
+        <section className="panel-hero p-5 text-sm text-muted">Your wallet is still being confirmed on NEAR.</section>
+      )}
 
       <section className="panel p-5">
         <p className="eyebrow">Limits you signed</p>
@@ -104,8 +94,16 @@ export function WalletDetails() {
         )}
       </section>
 
+      <ActivityList />
+
       <section className="panel p-5">
-        <p className="eyebrow">On NEAR Intents</p>
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">On NEAR Intents</p>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${agent.status === "ACTIVE" ? "bg-up/15 text-up" : "bg-gold/15 text-gold"}`}>
+            <Wallet size={11} className="mr-1 inline" aria-hidden="true" />
+            {agent.status === "ACTIVE" ? "Active" : agent.status}
+          </span>
+        </div>
         <dl className="mt-3 text-sm">
           <Row label="Agent ID" value={shortAddress(agent.id, 8)} copy={agent.id} />
           {agent.nearAccountId && <Row label="Wallet account" value={shortAddress(agent.nearAccountId, 8)} copy={agent.nearAccountId} />}

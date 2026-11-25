@@ -80,10 +80,14 @@ export const OPERATION_STATUSES = [
   "PENDING_APPROVAL",
   "PENDING_DEPOSIT",
   "PROCESSING",
+  "UNCERTAIN", // outcome not proven yet: keep polling, NEVER resend under a new key
+  "NEEDS_REVIEW", // automatic settlement stopped
   "SUCCESS",
   "REFUNDED",
   "FAILED",
 ] as const;
+export type OperationStatus = (typeof OPERATION_STATUSES)[number];
+export const FINAL_STATUSES: OperationStatus[] = ["SUCCESS", "REFUNDED", "FAILED"];
 
 /** Returned by submit-intent, status, deposit, swap, withdraw… */
 export const OperationSchema = z
@@ -193,10 +197,36 @@ const AgentSchema = z
 
 export const getAgent = (agentId: string) => call(`/v1/agents/${encodeURIComponent(agentId)}`, AgentSchema);
 
+const BalanceSchema = z
+  .object({
+    asset_id: z.string().optional(),
+    symbol: z.string().nullish(),
+    balance: z.string().nullish(), // exact decimal for display (null when decimals unknown)
+    balance_raw: z.string(), // exact atomic amount for arithmetic
+  })
+  .loose();
+export type AgentBalance = z.infer<typeof BalanceSchema>;
+
 export const getBalances = (agentId: string, source: "confidential" | "public" = "confidential") =>
   call(
     `/v1/agents/${encodeURIComponent(agentId)}/balances?source=${source}`,
-    z.object({ near_account_id: z.string(), source: z.string(), balances: z.array(z.record(z.string(), z.unknown())) }).loose(),
+    z.object({ near_account_id: z.string(), source: z.string(), balances: z.array(BalanceSchema) }).loose(),
+  );
+
+const BudgetWindow = z
+  .object({ limit_usd: z.string().nullable(), spent_usd: z.string().nullable(), remaining_usd: z.string().nullable(), resets_at: z.string().nullable() })
+  .loose();
+
+export const getPolicy = (agentId: string) =>
+  call(
+    `/v1/agents/${encodeURIComponent(agentId)}/policy`,
+    z
+      .object({
+        revision: z.number().optional(),
+        status: z.string().optional(),
+        usage: z.object({ budget: z.object({ daily: BudgetWindow }).loose() }).loose().optional(),
+      })
+      .loose(),
   );
 
 // ---------- Money actions (grant token + idempotency key) ----------
@@ -210,20 +240,33 @@ export const requestDeposit = (
   idempotencyKey: string,
 ) => call(`/v1/agents/${encodeURIComponent(agentId)}/deposit`, OperationSchema, { body, idempotencyKey });
 
-const SwapQuoteSchema = z
+/** Dry-run answer for swap, limit order and withdraw: runs nothing, charges nothing. */
+const DryRunSchema = z
   .object({
     dry: z.literal(true),
-    quote: z.record(z.string(), z.unknown()),
-    spend: z.record(z.string(), z.unknown()),
+    type: z.string(),
+    quote: z
+      .object({
+        amount_in: z.string().optional(),
+        amount_out: z.string().optional(),
+        min_amount_out: z.string().optional(),
+        time_estimate_seconds: z.number().optional(),
+      })
+      .loose(),
+    spend: z.object({ amount_usd: z.string().nullable() }).loose(),
+    fee: z.object({ amount_usd: z.string(), percent: z.string() }).loose().nullable(),
     owner_approval: z.boolean(),
-    warnings: z.array(z.unknown()),
+    // Each warning is a refusal the live request would get (e.g. insufficient_balance).
+    warnings: z.array(z.object({ code: z.string(), detail: z.string().optional() }).loose()),
   })
   .loose();
+export type DryRun = z.infer<typeof DryRunSchema>;
 
 export type SwapBody = { origin_asset: string; destination_asset: string; amount: string; min_amount_out?: string; note?: string };
 
-export const quoteAgentSwap = (agentId: string, body: SwapBody, grantToken: string) =>
-  call(`/v1/agents/${encodeURIComponent(agentId)}/swap`, SwapQuoteSchema, { body: { ...body, dry: true }, grantToken });
+/** Swap quote: needs only the partner key; a grant is optional (sent to prove it works). */
+export const quoteAgentSwap = (agentId: string, body: SwapBody, grantToken?: string) =>
+  call(`/v1/agents/${encodeURIComponent(agentId)}/swap`, DryRunSchema, { body: { ...body, dry: true }, grantToken });
 
 export const agentSwap = (agentId: string, body: SwapBody, g: GrantCall) =>
   call(`/v1/agents/${encodeURIComponent(agentId)}/swap`, OperationSchema, { body: { ...body, dry: false }, ...g });
@@ -252,3 +295,10 @@ export type WithdrawBody = { asset: string; amount: string; chain: string; recip
 
 export const withdraw = (agentId: string, body: WithdrawBody, g: GrantCall) =>
   call(`/v1/agents/${encodeURIComponent(agentId)}/withdraw`, OperationSchema, { body, ...g });
+
+/** Withdrawal preview: needs the grant and an Idempotency-Key, like the real withdrawal. */
+export const previewWithdraw = (agentId: string, body: WithdrawBody, g: GrantCall) =>
+  call(`/v1/agents/${encodeURIComponent(agentId)}/withdraw`, DryRunSchema, { body: { ...body, dry: true }, ...g });
+
+/** Status of any operation (op_…) or owner intent (intent_…). */
+export const operationStatus = intentStatus;

@@ -15,6 +15,13 @@
       "when": 1795620244933,
       "tag": "0001_broken_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795644997103,
+      "tag": "0002_zippy_sally_floyd",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeftRight, ArrowUpRight, Fingerprint, SlidersHorizontal, Bot } from "lucide-react";
 import { BOT_TYPES } from "@/lib/order-types";
 import { WalletCard } from "@/components/bots/WalletCard";
+import { MyBots } from "@/components/bots/MyBots";
 
 export const metadata: Metadata = { title: "Bots · Zorro" };
 
@@ -38,6 +39,8 @@ export default function BotsPage() {
 
       <WalletCard />
 
+      <MyBots />
+
       <section aria-labelledby="how-heading" className="panel p-5">
         <h2 id="how-heading" className="eyebrow">
           How it works
@@ -65,16 +68,22 @@ export default function BotsPage() {
           <h2 id="bots-heading" className="eyebrow">
             Strategies
           </h2>
-          <span className="font-mono text-[10px] tracking-[0.12em] text-gold uppercase">In development</span>
+          <span className="font-mono text-[10px] tracking-[0.12em] text-muted uppercase">Paper or live</span>
         </div>
         <ul className="grid gap-3">
-          {BOT_TYPES.map(({ key, title, example, how, icon: Icon }) => (
+          {BOT_TYPES.map(({ key, title, example, how, icon: Icon, create }) => (
             <li key={key} id={key} className="panel flex flex-col p-5">
               <div className="flex items-start justify-between gap-3">
                 <Icon size={20} strokeWidth={1.6} className="text-fox-light" aria-hidden="true" />
-                <span className="rounded-full border border-line px-2.5 py-1 font-mono text-[9px] tracking-[0.14em] text-dim uppercase">
-                  Soon
-                </span>
+                {create ? (
+                  <Link href={`/bots/new#${create}`} className="rounded-full bg-fox px-3 py-1 font-mono text-[10px] tracking-[0.12em] text-snow uppercase">
+                    Create →
+                  </Link>
+                ) : (
+                  <span className="rounded-full border border-line px-2.5 py-1 font-mono text-[9px] tracking-[0.14em] text-dim uppercase">
+                    Soon
+                  </span>
+                )}
               </div>
               <h3 className="mt-4 text-base font-medium">{title}</h3>
               <p className="mt-1 text-sm text-snow/80">{example}</p>
