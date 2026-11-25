@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SettingsPanel } from "./SettingsPanel";
+import { SystemStatus } from "./SystemStatus";
 
 export const metadata: Metadata = { title: "Settings · Zorro" };
 
@@ -11,6 +12,8 @@ export default function SettingsPage() {
       </header>
 
       <SettingsPanel />
+
+      <SystemStatus />
 
       <section className="rounded-2xl border border-line bg-surface p-4 text-sm leading-relaxed">
         <h2 className="font-medium">How Zorro keeps your funds safe</h2>

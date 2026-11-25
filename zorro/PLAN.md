@@ -107,7 +107,7 @@ The AI turns words into bots and explains them. It **never places trades itself*
 |---|---|
 | App | Next.js 16 (App Router, Cache Components) + TypeScript + Tailwind, installable phone web app (existing) |
 | Passkeys | WebAuthn in the browser (`@simplewebauthn/browser`), ES256, convert COSE → P-256 SPKI |
-| Database | SQLite via Drizzle (dev) → Postgres (deployed): users, agents, encrypted grant tokens, bots, bot runs, activity log |
+| Database | libsql via Drizzle: a local SQLite file in dev, a hosted libsql/Turso database when deployed (same code). Tables: users, agents, grants (encrypted tokens), bots, bot_events, operations |
 | Secrets at rest | Grant tokens encrypted (AES-256-GCM) with a server key (`ZORRO_ENCRYPTION_KEY`) |
 | Bot engine | Long-running Node worker: price loop (15s), strategy evaluation, execution queue (one action per agent at a time), retries with the same Idempotency-Key |
 | Backtester | Pure TypeScript, runs strategies over CoinGecko history with a fee model |
@@ -141,7 +141,7 @@ The UI shows this in plain words before the user signs: "Zorro can trade up to $
 |---|---|---|
 | ✅ 1. Skeleton | Installable app, live price, chart | Done |
 | ✅ 2. Swap now | Manual swaps via 1Click + payment links | Done (needs one real-funds test) |
-| **3. Foundations** | DB, Agent API client, DeepSeek client, HTTPS tunnel, encryption | `whoami`, token list and an AI test call work from the app |
+| ✅ 3. Foundations | DB, Agent API client, AI client, encryption, system status, unit tests | Done: all five health checks pass against live services (HTTPS tunnel moves to Phase 4, where passkeys need it) |
 | **4. Agent wallet** | Passkey sign-up → agent_create + grant (one signature) → policy screen | A real agent exists, owned by a passkey, Zorro holds a working grant |
 | **5. Fund and withdraw** | Deposit ZEC/USDC to the agent (ZIP-321), balances, withdraw to own address | Small real deposit and withdrawal both succeed |
 | **6. Bot engine + first bots** | Worker, Stop-loss/trailing, Smart DCA, activity log | A stop-loss triggers in demo mode and executes a real swap |
