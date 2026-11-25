@@ -142,7 +142,7 @@ The UI shows this in plain words before the user signs: "Zorro can trade up to $
 | ✅ 1. Skeleton | Installable app, live price, chart | Done |
 | ✅ 2. Swap now | Manual swaps via 1Click + payment links | Done (needs one real-funds test) |
 | ✅ 3. Foundations | DB, Agent API client, AI client, encryption, system status, unit tests | Done: all five health checks pass against live services (HTTPS tunnel moves to Phase 4, where passkeys need it) |
-| **4. Agent wallet** | Passkey sign-up → agent_create + grant (one signature) → policy screen | A real agent exists, owned by a passkey, Zorro holds a working grant |
+| ✅ 4. Agent wallet | Passkey sign-up/sign-in → limits screen → agent_create + grant (one signature) → wallet screen | Done: verified end to end on mainnet (agent ACTIVE, owned by a passkey, grant accepted by a dry-run quote) |
 | **5. Fund and withdraw** | Deposit ZEC/USDC to the agent (ZIP-321), balances, withdraw to own address | Small real deposit and withdrawal both succeed |
 | **6. Bot engine + first bots** | Worker, Stop-loss/trailing, Smart DCA, activity log | A stop-loss triggers in demo mode and executes a real swap |
 | **7. Limit-order bots** | Take-profit ladder, grid | Ladder and grid place, fill/cancel and re-arm correctly |
@@ -159,7 +159,7 @@ The UI shows this in plain words before the user signs: "Zorro can trade up to $
 |---|---|---|
 | 1 | Agent API is an experimental beta ("may lose all assets") | Small amounts only; say so plainly in the app and pitch |
 | 2 | ZEC to shielded `u1` may not be delivered (docs: transparent only) | Test with a tiny real withdrawal; fall back to `t1` + "shield in Zodl" instruction |
-| 3 | Passkeys need an exact HTTPS origin | HTTPS tunnel for local tests; deploy early |
+| 3 | Passkeys need an exact HTTPS origin | Verified: `http://localhost` is accepted for local tests. Phones need HTTPS (tunnel or deployment). A passkey only works on the origin it was created on |
 | 4 | Zorro's server holds grant tokens | Encrypt at rest; policy caps the damage (no foreign withdrawals, daily budget); user can revoke anytime |
 | 5 | Price watcher accuracy for stop-loss | Use the 1Click/Agent API token price (same venue), plus slippage limits (`min_amount_out`) |
 | 6 | 1,000 custody ops/day per agent | Grid levels and DCA frequency capped so a bot stays far below it |

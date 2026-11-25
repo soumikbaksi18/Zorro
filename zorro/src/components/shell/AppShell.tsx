@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
       <a
         href="#main-content"
-        className="fixed -top-20 left-4 z-50 rounded-lg bg-snow px-3 py-2 text-sm text-ink focus:top-3"
+        className="fixed -top-20 left-4 z-50 rounded-lg bg-snow px-3 py-2 text-sm text-ink focus-visible:top-3"
       >
         Skip to content
       </a>

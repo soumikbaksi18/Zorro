@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeftRight, ArrowUpRight, Fingerprint, SlidersHorizontal, Bot } from "lucide-react";
 import { BOT_TYPES } from "@/lib/order-types";
+import { WalletCard } from "@/components/bots/WalletCard";
 
 export const metadata: Metadata = { title: "Bots · Zorro" };
 
@@ -34,6 +35,8 @@ export default function BotsPage() {
           never send funds anywhere except your addresses.
         </p>
       </header>
+
+      <WalletCard />
 
       <section aria-labelledby="how-heading" className="panel p-5">
         <h2 id="how-heading" className="eyebrow">

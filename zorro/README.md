@@ -32,7 +32,14 @@ Built for the Zcash India "Build on Zcash" bounty. See [PLAN.md](PLAN.md) for th
 - Minimum ZEC swap: 0.00132 ZEC. Buying ZEC has a fixed ~0.00032 ZEC withdrawal fee
 - Agent API: experimental mainnet beta; passkey and NEAR owners; native ZEC supported
 
-Next: Phase 4, passkey sign-up and the user's agent wallet.
+**Phase 4 (bot wallet): done**
+- Passkey sign-up and sign-in (WebAuthn, ES256, user verification), verified server-side; session cookie holds a random token, only its hash is stored
+- Limits screen: daily USD budget and the only addresses money may leave to, shown in plain words
+- One passkey signature creates the NEAR Intents agent *and* authorizes Zorro's grant; NEAR's own summary is shown before signing
+- Grant token encrypted at rest (bound to its agent), only its SHA-256 sent to NEAR; "Test permission" proves it with a dry-run quote
+- Verified end to end on mainnet with a virtual passkey: agent ACTIVE in ~15 s, grant accepted
+
+Next: Phase 5, funding the bot wallet, balances and withdrawals.
 
 ## Run locally
 

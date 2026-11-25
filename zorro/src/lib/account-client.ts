@@ -1,0 +1,148 @@
+"use client";
+
+// Browser side of the account: who is signed in, their bot wallet, and passkey actions.
+
+import { useSyncExternalStore } from "react";
+import { browserSupportsWebAuthn, startAuthentication, startRegistration, WebAuthnError } from "@simplewebauthn/browser";
+import type { AgentSummary } from "./agent-service";
+
+export type Me = {
+  user: { id: string; origin: string; createdAt: string } | null;
+  agent: AgentSummary | null;
+};
+
+type State = { status: "loading" } | { status: "ready"; me: Me } | { status: "error" };
+
+let state: State = { status: "loading" };
+let inFlight: Promise<void> | null = null;
+const listeners = new Set<() => void>();
+
+function set(next: State) {
+  state = next;
+  listeners.forEach((l) => l());
+}
+
+/** Re-read /api/me (after sign-in, sign-out, or creating a wallet). */
+export function refreshAccount(): Promise<void> {
+  inFlight ??= fetch("/api/me", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((me: Me) => set({ status: "ready", me }))
+    .catch(() => set({ status: "error" }))
+    .finally(() => {
+      inFlight = null;
+    });
+  return inFlight;
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  if (listeners.size === 1 && state.status === "loading") void refreshAccount();
+  return () => listeners.delete(listener);
+}
+
+const SERVER_STATE: State = { status: "loading" };
+
+export function useAccount(): State {
+  return useSyncExternalStore(subscribe, () => state, () => SERVER_STATE);
+}
+
+// ---------- Passkeys ----------
+
+export class PasskeyError extends Error {}
+
+/** Why passkeys can't work here, or null if they can. */
+export function passkeyBlocker(): string | null {
+  if (typeof window === "undefined") return null;
+  if (!window.isSecureContext) return "Passkeys need a secure connection. Open Zorro over HTTPS or on localhost.";
+  if (!browserSupportsWebAuthn()) return "This browser doesn't support passkeys.";
+  return null;
+}
+
+async function post<T>(url: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: body === undefined ? undefined : { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new PasskeyError(data.error ?? "Something went wrong");
+  return data as T;
+}
+
+function explain(e: unknown): PasskeyError {
+  if (e instanceof PasskeyError) return e;
+  if (e instanceof WebAuthnError && e.code === "ERROR_CEREMONY_ABORTED") return new PasskeyError("Cancelled.");
+  if (e instanceof Error && e.name === "NotAllowedError") return new PasskeyError("Cancelled or timed out.");
+  return new PasskeyError(e instanceof Error ? e.message : "Passkey failed");
+}
+
+export async function createPasskey(): Promise<void> {
+  try {
+    const optionsJSON = await post<Parameters<typeof startRegistration>[0]["optionsJSON"]>("/api/auth/register/options");
+    const response = await startRegistration({ optionsJSON });
+    await post("/api/auth/register/verify", response);
+  } catch (e) {
+    throw explain(e);
+  } finally {
+    await refreshAccount();
+  }
+}
+
+export async function signInWithPasskey(): Promise<void> {
+  try {
+    const optionsJSON = await post<Parameters<typeof startAuthentication>[0]["optionsJSON"]>("/api/auth/login/options");
+    const response = await startAuthentication({ optionsJSON });
+    await post("/api/auth/login/verify", response);
+  } catch (e) {
+    throw explain(e);
+  } finally {
+    await refreshAccount();
+  }
+}
+
+export async function signOut(): Promise<void> {
+  await post("/api/auth/logout").catch(() => undefined);
+  await refreshAccount();
+}
+
+// ---------- Bot wallet ----------
+
+export type PolicyChoices = {
+  dailyBudgetUsd: string;
+  withdrawZec: string;
+  withdrawUsdcBase?: string;
+  withdrawUsdcSol?: string;
+};
+
+type Prepared = { correlationId: string; agentId: string; webauthnOptions: Record<string, unknown>; summary: string; expiresAt: string };
+type CreateResult = { status: "ACTIVE"; agentId: string } | { status: "PROCESSING"; correlationId: string } | { status: "FAILED"; reason: string };
+
+export function prepareWallet(choices: PolicyChoices): Promise<Prepared> {
+  return post<Prepared>("/api/agent/prepare", choices);
+}
+
+/** Sign the prepared intent with the passkey, submit it, and wait for the wallet. */
+export async function signAndCreateWallet(prepared: Prepared, onProgress: (step: string) => void): Promise<CreateResult> {
+  let credential;
+  try {
+    onProgress("Waiting for your passkey…");
+    credential = await startAuthentication({
+      optionsJSON: prepared.webauthnOptions as unknown as Parameters<typeof startAuthentication>[0]["optionsJSON"],
+    });
+  } catch (e) {
+    throw explain(e);
+  }
+  onProgress("Creating your bot wallet on NEAR Intents…");
+  let result = await post<CreateResult>("/api/agent/submit", { correlationId: prepared.correlationId, credential });
+  // Settlement can take a little while; keep checking without re-signing.
+  for (let i = 0; i < 4 && result.status === "PROCESSING"; i++) {
+    onProgress("Still confirming on NEAR…");
+    result = await post<CreateResult>("/api/agent/submit", { correlationId: prepared.correlationId });
+  }
+  await refreshAccount();
+  return result;
+}
+
+export function checkBotPermission(): Promise<{ ok: boolean; detail: string }> {
+  return post("/api/agent/grant-check");
+}

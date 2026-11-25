@@ -21,10 +21,61 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey(), // random UUID
   passkeyCredentialId: text("passkey_credential_id").notNull().unique(), // base64url
   passkeyPublicKey: text("passkey_public_key").notNull(), // P-256 SPKI, base64url (format the Agent API expects)
+  passkeyPublicKeyCose: text("passkey_public_key_cose").notNull(), // base64url, for verifying Zorro sign-ins
+  passkeyCounter: integer("passkey_counter").notNull().default(0),
+  passkeyTransports: text("passkey_transports", { mode: "json" }).$type<string[]>(),
   rpId: text("rp_id").notNull(),
   origin: text("origin").notNull(),
   createdAt: createdAt(),
 });
+
+/** Signed-in sessions. The cookie holds a random token; only its SHA-256 is stored. */
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId)],
+);
+
+/** One-time WebAuthn challenges for passkey sign-up and sign-in (deleted on use). */
+export const authChallenges = sqliteTable("auth_challenges", {
+  id: text("id").primaryKey(),
+  purpose: text("purpose", { enum: ["register", "login"] }).notNull(),
+  challenge: text("challenge").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/**
+ * Owner intents waiting for the user's passkey signature. For agent_create it also
+ * holds the new grant token (encrypted) until the agent is confirmed.
+ */
+export const pendingIntents = sqliteTable(
+  "pending_intents",
+  {
+    correlationId: text("correlation_id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").notNull(),
+    type: text("type").notNull(),
+    intent: text("intent", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    policy: text("policy", { mode: "json" }).$type<Record<string, unknown>>(),
+    grantId: text("grant_id"),
+    grantLabel: text("grant_label"),
+    grantTokenCiphertext: text("grant_token_ciphertext"),
+    grantTokenHash: text("grant_token_hash"),
+    grantExpiresAt: integer("grant_expires_at", { mode: "timestamp_ms" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("pending_intents_user_idx").on(t.userId)],
+);
 
 /** A NEAR Intents agent wallet owned by a user's passkey. */
 export const agents = sqliteTable(
