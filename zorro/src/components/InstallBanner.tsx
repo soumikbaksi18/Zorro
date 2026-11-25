@@ -1,5 +1,6 @@
 "use client";
 
+import { Smartphone, X } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> };
@@ -43,16 +44,17 @@ export function InstallBanner() {
   };
 
   return (
-    <aside className="flex items-start gap-3 rounded-2xl border border-gold/30 bg-gold/10 p-4 text-sm">
+    <aside className="panel mb-6 flex items-start gap-3 border-fox/40 bg-fox/5 p-4 text-sm">
+      <Smartphone size={18} strokeWidth={1.7} className="mt-0.5 shrink-0 text-fox-light" aria-hidden="true" />
       <div className="flex-1">
-        <p className="font-medium text-gold">Install Zorro</p>
+        <p className="font-medium">Install Zorro</p>
         {mode === "ios" ? (
-          <p className="mt-1 text-snow/80">
-            Tap <span className="font-medium">Share</span>, then{" "}
-            <span className="font-medium">Add to Home Screen</span>. iPhone only sends price alerts to installed apps.
+          <p className="mt-1 text-muted">
+            Tap <span className="text-snow">Share</span>, then <span className="text-snow">Add to Home Screen</span>.
+            iPhone only sends bot alerts to installed apps.
           </p>
         ) : (
-          <p className="mt-1 text-snow/80">Add Zorro to your home screen to get stop-loss and DCA alerts.</p>
+          <p className="mt-1 text-muted">Add Zorro to your home screen to get stop-loss and DCA alerts.</p>
         )}
         {mode === "android" && promptEvent && (
           <button
@@ -60,16 +62,14 @@ export function InstallBanner() {
               await promptEvent.prompt();
               setDismissed(true);
             }}
-            className="mt-3 rounded-xl bg-gold px-4 py-2 font-medium text-ink"
+            className="btn-primary mt-3 min-h-10 px-4 text-[13px]"
           >
             Install
           </button>
         )}
       </div>
-      <button onClick={dismiss} aria-label="Dismiss" className="p-1 text-muted hover:text-snow">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-          <path d="M6 6l12 12M18 6 6 18" strokeLinecap="round" />
-        </svg>
+      <button onClick={dismiss} aria-label="Dismiss" className="-m-1 rounded-lg p-1 text-muted hover:text-snow">
+        <X size={16} />
       </button>
     </aside>
   );

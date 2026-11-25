@@ -1,11 +1,19 @@
 @import "tailwindcss";
 
-/* Zorro brand palette, taken from brand/zorro-logo.png */
+/*
+ * Zorro design system.
+ * Interface patterns follow Zeno Wallet (ArcGenesis): hairline panels, monospace
+ * uppercase labels, pill actions, sidebar on desktop / tab bar on mobile.
+ * Colour is Zorro's and functional: purple = action, gold = notice,
+ * green = success or price up, red = error or price down.
+ */
 @theme {
-  --color-ink: #0a0a0a;
-  --color-surface: #141217;
-  --color-surface-2: #1d1a22;
-  --color-line: #2a2631;
+  --color-ink: #0a0a0a; /* page */
+  --color-panel: #111013; /* hairline panels */
+  --color-surface: #141217; /* raised cards */
+  --color-surface-2: #1d1a22; /* inputs, chips */
+  --color-line: #2a2631; /* hairlines */
+  --color-line-strong: #3d3646;
   --color-fox: #8a3fc8;
   --color-fox-light: #b86ae6;
   --color-fox-dark: #5b2491;
@@ -14,6 +22,7 @@
   --color-gold: #e9b33b;
   --color-snow: #f1eef5;
   --color-muted: #9b95a6;
+  --color-dim: #6f6878;
   --color-up: #6cc24a;
   --color-down: #f05d6c;
 }
@@ -32,9 +41,224 @@ body {
   background: var(--color-ink);
   color: var(--color-snow);
   -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "cv01", "ss01";
+}
+
+::selection {
+  background: var(--color-fox);
+  color: var(--color-snow);
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-fox-light);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 /* Numbers that change should not jiggle */
 .tabular {
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@layer components {
+  /* Small monospace label above a value or section ("ZEC PRICE", "TOOLS"). */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  /* Hairline container: the basic building block of every screen. */
+  .panel {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+  }
+
+  /* The hero card: soft purple light from the top-right corner. */
+  .panel-hero {
+    border: 1px solid var(--color-line-strong);
+    border-radius: 18px;
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgb(138 63 200 / 0.22), transparent 60%),
+      radial-gradient(80% 60% at 0% 100%, rgb(184 106 230 / 0.06), transparent 70%),
+      var(--color-surface);
+    box-shadow: 0 30px 80px -48px rgb(138 63 200 / 0.55);
+  }
+
+  .page-title {
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  .page-lead {
+    margin-top: 8px;
+    max-width: 36rem;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-muted);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    padding: 0 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      opacity 0.15s;
+  }
+  .btn-primary {
+    background: var(--color-fox);
+    color: var(--color-snow);
+  }
+  .btn-primary:hover {
+    background: #9a4dd8;
+  }
+  .btn-secondary {
+    border: 1px solid var(--color-line-strong);
+    color: var(--color-snow);
+    background: rgb(255 255 255 / 0.02);
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-fox-light);
+  }
+  .btn-primary:disabled,
+  .btn-secondary:disabled {
+    opacity: 0.4;
+  }
+
+  /* Underlined tabs (Activity / Markets, chart ranges). */
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .tab {
+    padding: 12px 12px;
+    margin-bottom: -1px;
+    border-bottom: 2px solid transparent;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    transition: color 0.15s;
+  }
+  .tab:hover {
+    color: var(--color-snow);
+  }
+  .tab[aria-selected="true"],
+  .tab[aria-pressed="true"] {
+    color: var(--color-fox-light);
+    border-bottom-color: var(--color-fox-light);
+  }
+
+  /* Small status chip in the header ("● Mainnet · NEAR Intents"). */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
+    border: 1px solid #5a4a20;
+    border-radius: 8px;
+    background: #1c170c;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    white-space: nowrap;
+  }
+
+  /* Notice banner (gold) and its body copy. */
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #5a4a20;
+    border-radius: 14px;
+    background: #1c170c;
+  }
+  .notice strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-gold);
+  }
+  .notice p {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #cdb98a;
+  }
+
+  /* "What others can see" rows. */
+  .visibility-row {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .visibility-row > svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--color-muted);
+  }
+  .visibility-row strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .visibility-row p {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--color-muted);
+  }
+
+  /* Text inputs on dark panels. */
+  .field {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 12px;
+    background: var(--color-panel);
+    padding: 0 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field:focus {
+    border-color: var(--color-fox-light);
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--color-down);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

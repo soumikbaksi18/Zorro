@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
+  // The Trade page became Bots.
+  async redirects() {
+    return [{ source: "/trade", destination: "/bots", permanent: true }];
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

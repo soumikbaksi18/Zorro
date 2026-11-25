@@ -5,12 +5,13 @@ export const metadata: Metadata = { title: "Orders · Zorro" };
 
 export default function OrdersPage() {
   return (
-    <main className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-        <p className="mt-1 text-sm text-muted">Your swaps, take-profits, stop-losses and DCA plans.</p>
+        <p className="eyebrow">Orders</p>
+        <h1 className="page-title mt-3">Your swaps and bot trades</h1>
+        <p className="page-lead">Live status from NEAR Intents. Stored only on this phone.</p>
       </header>
       <SwapList />
-    </main>
+    </div>
   );
 }

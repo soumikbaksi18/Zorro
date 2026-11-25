@@ -1,52 +1,69 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ArrowLeftRight, ArrowUpRight, Bot, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
 import { Market } from "@/components/Market";
 import { InstallBanner } from "@/components/InstallBanner";
-import { ORDER_TYPES } from "@/lib/order-types";
+import { OverviewPanel } from "@/components/OverviewPanel";
+
+type Tool = { href: string; label: string; note: string; icon: LucideIcon; soon?: boolean };
+
+const TOOLS: Tool[] = [
+  { href: "/swap", label: "Swap", note: "ZEC ⇄ USDC at today's price", icon: ArrowLeftRight },
+  { href: "/bots", label: "Bots", note: "Stop-loss, DCA, take-profit, grid", icon: Bot, soon: true },
+  { href: "/assistant", label: "AI assistant", note: "Describe a strategy in words", icon: Sparkles, soon: true },
+  { href: "/settings", label: "Status & privacy", note: "Connections and what we store", icon: ShieldCheck },
+];
 
 export default function Home() {
   return (
-    <main className="flex flex-col gap-5">
-      <header className="flex items-center gap-3">
-        <Image src="/brand/zorro-mark.png" alt="" width={44} height={44} className="rounded-xl" priority />
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Zorro</h1>
-          <p className="text-xs text-muted">Set it, forget it. Your ZEC stays yours.</p>
-        </div>
-      </header>
-
+    <>
+      <h1 className="sr-only">Zorro overview</h1>
       <InstallBanner />
-
-      <Market />
-
-      <section aria-labelledby="actions-heading">
-        <h2 id="actions-heading" className="mb-3 text-sm font-medium text-muted">
-          What do you want to do?
-        </h2>
-        <ul className="grid grid-cols-2 gap-3">
-          {ORDER_TYPES.map((t) => (
-            <li key={t.key}>
-              <Link
-                href={t.href ?? `/trade#${t.key}`}
-                className={`flex h-full flex-col rounded-2xl border bg-surface p-4 transition-colors hover:border-fox/60 ${
-                  t.href ? "border-fox/40" : "border-line"
-                }`}
-              >
-                <span className="flex items-center justify-between gap-2 font-medium">
-                  {t.title}
-                  {!t.href && <span className="text-[10px] font-normal text-muted">Soon</span>}
-                </span>
-                <span className="mt-1 text-xs leading-relaxed text-muted">{t.example}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <p className="px-2 text-center text-xs leading-relaxed text-muted">
-        Zorro never holds your keys or funds. Every trade is a payment you approve in your own wallet, routed through
-        NEAR Intents.
+      <div className="grid gap-6">
+        <Market />
+        <div className="grid min-w-0 gap-6">
+          <OverviewPanel />
+          <nav aria-label="Tools" className="grid gap-3">
+            {TOOLS.map((t) => (
+              <ToolLink key={t.label} tool={t} />
+            ))}
+          </nav>
+        </div>
+      </div>
+      <p className="mt-8 max-w-xl text-xs leading-relaxed text-dim">
+        Zorro never holds your keys or funds. Every trade is a payment you approve in your own wallet, or a bot
+        acting within limits you sign, routed through NEAR Intents.
       </p>
-    </main>
+    </>
+  );
+}
+
+function ToolLink({ tool }: { tool: Tool }) {
+  const Icon = tool.icon;
+  const body = (
+    <>
+      <Icon size={18} strokeWidth={1.6} className={tool.soon ? "shrink-0 text-dim" : "shrink-0 text-fox-light"} aria-hidden="true" />
+      <span className="grid min-w-0 gap-0.5">
+        <strong className="text-sm font-medium">{tool.label}</strong>
+        <small className="truncate text-xs text-muted">{tool.note}</small>
+      </span>
+      {tool.soon ? (
+        <span className="ml-auto font-mono text-[9px] tracking-[0.14em] text-dim uppercase">Soon</span>
+      ) : (
+        <ArrowUpRight size={14} className="ml-auto shrink-0 text-dim" aria-hidden="true" />
+      )}
+    </>
+  );
+  const cls = "panel flex items-center gap-3 p-4";
+  if (tool.soon && tool.href === "/assistant") {
+    return (
+      <span className={`${cls} cursor-default opacity-70`} aria-disabled="true">
+        {body}
+      </span>
+    );
+  }
+  return (
+    <Link href={tool.href} className={`${cls} transition-colors hover:border-fox/60 hover:bg-fox/5`}>
+      {body}
+    </Link>
   );
 }

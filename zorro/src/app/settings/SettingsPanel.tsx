@@ -9,7 +9,7 @@ export function SettingsPanel() {
   const swaps = useSwaps();
 
   return (
-    <section className="divide-y divide-line rounded-2xl border border-line bg-surface">
+    <section className="panel divide-y divide-line" aria-label="Preferences">
       <div className="flex items-center justify-between p-4">
         <div>
           <p className="font-medium">Display currency</p>
@@ -51,7 +51,7 @@ export function SettingsPanel() {
       <div className="p-4">
         <p className="font-medium">Device ID</p>
         <p className="text-xs text-muted">Anonymous. Links your orders and notifications to this phone.</p>
-        <p className="mt-2 break-all rounded-lg bg-surface-2 px-3 py-2 font-mono text-xs text-snow/80">
+        <p className="mt-2 break-all rounded-lg border border-line bg-ink px-3 py-2 font-mono text-xs text-snow/80">
           {deviceId ?? "…"}
         </p>
       </div>

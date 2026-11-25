@@ -19,7 +19,7 @@ export function CopyButton({ value, label = "Copy" }: { value: string; label?: s
           /* clipboard blocked; the value is still visible to copy by hand */
         }
       }}
-      className="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-snow/90 hover:border-fox/60"
+      className="shrink-0 rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-snow/90 uppercase hover:border-fox-light"
     >
       {copied ? "Copied" : label}
     </button>
@@ -62,14 +62,14 @@ export function Segmented<T extends string>({
   label: string;
 }) {
   return (
-    <div className="flex rounded-xl bg-surface-2 p-1" role="group" aria-label={label}>
+    <div className="flex rounded-full border border-line bg-panel p-1" role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
-          className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+          className={`min-h-10 flex-1 rounded-full text-sm font-medium transition-colors ${
             value === o.value ? "bg-fox text-snow" : "text-muted hover:text-snow"
           }`}
         >

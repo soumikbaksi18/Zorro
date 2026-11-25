@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, Globe, Lock, Link2 } from "lucide-react";
 import { MIN_ZEC, STABLECOINS, ZEC, getStablecoin, type StablecoinKey } from "@/lib/assets";
 import { isValidAddressForChain, zcashAddressKind } from "@/lib/addresses";
 import type { SwapQuote } from "@/lib/swap";
@@ -30,6 +31,7 @@ export function SwapForm() {
   const [refundInput, setRefundInput] = useState<string | null>(null);
   const saved = useSavedAddresses();
   const [slippage, setSlippage] = useState("100");
+  const [consent, setConsent] = useState(false);
   const [spot, setSpot] = useState<Spot | null>(null);
   const [review, setReview] = useState<SwapQuote | null>(null);
   const [busy, setBusy] = useState<"review" | "confirm" | null>(null);
@@ -72,7 +74,7 @@ export function SwapForm() {
 
   const recipientOk = isValidAddressForChain(destination.chain, recipient);
   const refundOk = isValidAddressForChain(origin.chain, refundTo);
-  const canReview = amountNum > 0 && recipientOk && refundOk && !busy;
+  const canReview = amountNum > 0 && recipientOk && refundOk && consent && !busy;
 
   async function requestQuote(dry: boolean): Promise<SwapQuote | null> {
     const res = await fetch("/api/swap/quote", {
@@ -134,104 +136,179 @@ export function SwapForm() {
 
   const zecAddressField = direction === "sell" ? refundTo : recipient;
   const transparentWarning = zcashAddressKind(zecAddressField) === "transparent";
+  const privacy = <PrivacyPanel direction={direction} chainName={coin.chainName} />;
 
   return (
-    <div className="flex flex-col gap-4">
-      <Segmented
-        label="Swap direction"
-        value={direction}
-        onChange={changeChains(setDirection)}
-        options={[
-          { value: "sell", label: "Sell ZEC" },
-          { value: "buy", label: "Buy ZEC" },
-        ]}
-      />
-
-      <Field label={direction === "sell" ? "Receive USDC on" : "Pay with USDC on"}>
+    <div className="flex flex-col gap-5">
         <Segmented
-          label="Stablecoin network"
-          value={stable}
-          onChange={changeChains(setStable)}
-          options={STABLECOINS.map((s) => ({ value: s.key, label: s.chainName }))}
+          label="Swap direction"
+          value={direction}
+          onChange={changeChains(setDirection)}
+          options={[
+            { value: "sell", label: "Sell ZEC" },
+            { value: "buy", label: "Buy ZEC" },
+          ]}
         />
-      </Field>
 
-      <Field label={`You send (${origin.symbol}${origin === ZEC ? "" : ` on ${origin.chainName}`})`}>
-        <div className="flex items-center rounded-2xl border border-line bg-surface px-4 focus-within:border-fox">
-          <input
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => edit(setAmount)(e.target.value.replace(",", ".").replace(/[^\d.]/g, ""))}
-            className="tabular w-full bg-transparent py-4 text-2xl font-semibold outline-none placeholder:text-muted/50"
-            aria-label={`Amount of ${origin.symbol} to send`}
+        <Field label={direction === "sell" ? "Receive USDC on" : "Pay with USDC on"}>
+          <Segmented
+            label="Stablecoin network"
+            value={stable}
+            onChange={changeChains(setStable)}
+            options={STABLECOINS.map((s) => ({ value: s.key, label: s.chainName }))}
           />
-          <span className="text-muted">{origin.symbol}</span>
+        </Field>
+
+        <div className="panel p-4 focus-within:border-fox-light">
+          <p className="eyebrow">You send{origin === ZEC ? "" : ` · ${origin.chainName}`}</p>
+          <div className="mt-1 flex items-center gap-3">
+            <input
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => edit(setAmount)(e.target.value.replace(",", ".").replace(/[^\d.]/g, ""))}
+              className="tabular w-full min-w-0 bg-transparent py-2 text-[34px] font-light tracking-[-0.03em] outline-none placeholder:text-dim"
+              aria-label={`Amount of ${origin.symbol} to send`}
+            />
+            <span className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1.5 text-sm font-medium">
+              {origin.symbol}
+            </span>
+          </div>
+          <p className="tabular text-xs text-muted">
+            {[
+              fiatValue !== null && `≈ ${formatFiat(fiatValue, currency)}`,
+              estimateOut !== null && `you get about ${estimateOut.toFixed(direction === "sell" ? 2 : 5)} ${destination.symbol}`,
+              direction === "sell" && `min ${MIN_ZEC} ZEC`,
+            ]
+              .filter(Boolean)
+              .join(" · ") || " "}
+          </p>
         </div>
-        <p className="tabular mt-1.5 px-1 text-xs text-muted">
-          {fiatValue !== null ? `≈ ${formatFiat(fiatValue, currency)}` : " "}
-          {estimateOut !== null &&
-            ` · you get about ${estimateOut.toFixed(direction === "sell" ? 2 : 5)} ${destination.symbol}`}
-          {direction === "sell" && ` · minimum ${MIN_ZEC} ZEC`}
+
+        <AddressField
+          label={`Receive ${destination.symbol} at · ${destination.chainName} address`}
+          value={recipient}
+          onChange={edit(setRecipientInput)}
+          ok={recipientOk}
+          placeholder={destination.chain === "zec" ? "u1… or t1… address" : destination.chain === "base" ? "0x…" : "Solana address"}
+        />
+        <AddressField
+          label={`Refund to, if the swap can't complete · ${origin.chainName} address`}
+          value={refundTo}
+          onChange={edit(setRefundInput)}
+          ok={refundOk}
+          placeholder={origin.chain === "zec" ? "u1… or t1… address" : origin.chain === "base" ? "0x…" : "Solana address"}
+        />
+        {transparentWarning && (
+          <p className="-mt-2 rounded-xl border border-gold/30 bg-gold/10 px-3 py-2 text-xs text-gold">
+            That&apos;s a transparent Zcash address (t…): anything sent there is public.
+          </p>
+        )}
+
+        <Field label="Max price slippage">
+          <Segmented label="Slippage" value={slippage} onChange={edit(setSlippage)} options={SLIPPAGE_OPTIONS} />
+        </Field>
+
+        {privacy}
+
+        <label className="flex items-start gap-3 text-xs leading-relaxed text-muted">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-fox)]"
+          />
+          <span>
+            Share this swap&apos;s amount and addresses with <span className="text-snow">NEAR Intents</span> to get a
+            quote. Nothing moves until you send the deposit yourself.
+          </span>
+        </label>
+
+        {error && (
+          <p role="alert" className="rounded-xl border border-down/40 bg-down/10 px-3 py-2.5 text-sm text-down">
+            {error}
+          </p>
+        )}
+
+        {review ? (
+          <ReviewCard quote={review} onConfirm={onConfirm} confirming={busy === "confirm"} />
+        ) : (
+          <button type="button" onClick={onReview} disabled={!canReview} className="btn-primary w-full">
+            {busy === "review" ? "Getting quote…" : "Review swap"}
+          </button>
+        )}
+
+        <p className="text-xs leading-relaxed text-dim">
+          Quotes come from NEAR Intents solvers. If the price moves more than your slippage before your deposit
+          lands, NEAR Intents refunds you automatically.
         </p>
-      </Field>
-
-      <AddressField
-        label={`Receive ${destination.symbol} at (${destination.chainName} address)`}
-        value={recipient}
-        onChange={edit(setRecipientInput)}
-        ok={recipientOk}
-        placeholder={destination.chain === "zec" ? "u1… shielded address" : destination.chain === "base" ? "0x…" : "Solana address"}
-      />
-      <AddressField
-        label={`Refund to, if the swap can't complete (${origin.chainName} address)`}
-        value={refundTo}
-        onChange={edit(setRefundInput)}
-        ok={refundOk}
-        placeholder={origin.chain === "zec" ? "u1… shielded address" : origin.chain === "base" ? "0x…" : "Solana address"}
-      />
-      {transparentWarning && (
-        <p className="-mt-2 rounded-xl bg-gold/10 px-3 py-2 text-xs text-gold">
-          That&apos;s a transparent Zcash address (t…). Use a shielded one (u1…) from Zodl to keep this private.
-        </p>
-      )}
-
-      <Field label="Max price slippage">
-        <Segmented label="Slippage" value={slippage} onChange={edit(setSlippage)} options={SLIPPAGE_OPTIONS} />
-      </Field>
-
-      {error && (
-        <p role="alert" className="rounded-xl bg-down/10 px-3 py-2.5 text-sm text-down">
-          {error}
-        </p>
-      )}
-
-      {review ? (
-        <ReviewCard quote={review} onConfirm={onConfirm} confirming={busy === "confirm"} />
-      ) : (
-        <button
-          type="button"
-          onClick={onReview}
-          disabled={!canReview}
-          className="rounded-2xl bg-fox py-4 font-semibold text-snow transition-opacity disabled:opacity-40"
-        >
-          {busy === "review" ? "Getting quote…" : "Review swap"}
-        </button>
-      )}
-
-      <p className="px-2 text-center text-xs leading-relaxed text-muted">
-        Quotes come from NEAR Intents solvers. If the price moves more than your slippage before your deposit lands,
-        NEAR Intents refunds you automatically.
-      </p>
     </div>
+  );
+}
+
+function PrivacyPanel({ direction, chainName }: { direction: Direction; chainName: string }) {
+  const rows =
+    direction === "sell"
+      ? [
+          {
+            icon: Eye,
+            title: "Zcash",
+            body: "Your deposit goes to a transparent NEAR Intents address, so its amount and time are public. Your wallet's other funds stay shielded.",
+          },
+          {
+            icon: Globe,
+            title: "NEAR Intents",
+            body: "Sees the amount, both addresses and the timing. Your refund address is recorded publicly on NEAR.",
+          },
+          { icon: Link2, title: chainName, body: `The USDC you receive is a normal public transfer on ${chainName}.` },
+        ]
+      : [
+          { icon: Link2, title: chainName, body: `Your USDC deposit is a normal public transfer on ${chainName}.` },
+          {
+            icon: Globe,
+            title: "NEAR Intents",
+            body: "Sees the amount, both addresses and the timing. Your refund address is recorded publicly on NEAR.",
+          },
+          {
+            icon: Eye,
+            title: "Zcash",
+            body: "NEAR Intents' docs list Zcash as transparent addresses only, so treat the ZEC delivery as public. Shield it in your wallet afterwards.",
+          },
+        ];
+
+  return (
+    <section className="panel p-5" aria-labelledby="privacy-heading">
+      <p className="eyebrow">Privacy review</p>
+      <h2 id="privacy-heading" className="mt-3 text-xl font-light tracking-[-0.02em]">
+        What others can see
+      </h2>
+      <div className="mt-4">
+        {rows.map(({ icon: Icon, title, body }) => (
+          <div key={title} className="visibility-row">
+            <Icon size={16} strokeWidth={1.6} aria-hidden="true" />
+            <div>
+              <strong>{title}</strong>
+              <p>{body}</p>
+            </div>
+          </div>
+        ))}
+        <div className="visibility-row">
+          <Lock size={16} strokeWidth={1.6} className="!text-leaf" aria-hidden="true" />
+          <div>
+            <strong>Zorro</strong>
+            <p>Forwards your quote request and keeps the swap only on this phone. We never see your keys.</p>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 px-1 text-sm text-muted">{label}</p>
+      <p className="eyebrow mb-2 px-1">{label}</p>
       {children}
     </div>
   );
@@ -247,7 +324,7 @@ function AddressField(props: {
   const showError = props.value.trim().length > 0 && !props.ok;
   return (
     <label className="block">
-      <span className="mb-2 block px-1 text-sm text-muted">{props.label}</span>
+      <span className="eyebrow mb-2 block px-1">{props.label}</span>
       <input
         value={props.value}
         onChange={(e) => props.onChange(e.target.value.trim())}
@@ -256,11 +333,11 @@ function AddressField(props: {
         autoCapitalize="off"
         spellCheck={false}
         aria-invalid={showError}
-        className={`w-full rounded-2xl border bg-surface px-4 py-3.5 font-mono text-sm outline-none placeholder:font-sans placeholder:text-muted/60 focus:border-fox ${
-          showError ? "border-down" : "border-line"
-        }`}
+        className="field font-mono text-sm placeholder:font-sans placeholder:text-dim"
       />
-      {showError && <span className="mt-1 block px-1 text-xs text-down">That address doesn&apos;t look right for this network.</span>}
+      {showError && (
+        <span className="mt-1 block px-1 text-xs text-down">That address doesn&apos;t look right for this network.</span>
+      )}
     </label>
   );
 }
@@ -273,20 +350,19 @@ function ReviewCard({ quote, onConfirm, confirming }: { quote: SwapQuote; onConf
     ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
   return (
-    <section ref={ref} className="scroll-mb-24 rounded-2xl border border-fox/50 bg-fox/10 p-4" aria-label="Quote">
-      <dl className="tabular space-y-2 text-sm">
+    <section ref={ref} className="panel-hero scroll-mb-24 p-5" aria-label="Quote">
+      <p className="eyebrow">Quote · NEAR Intents</p>
+      <p className="tabular mt-3 text-[30px] leading-none font-light tracking-[-0.02em]">
+        {quote.receive.amount} <span className="text-base text-muted">{quote.receive.symbol}</span>
+      </p>
+      <p className="mt-1.5 text-xs text-muted">Estimated amount you receive on {quote.receive.chainName}</p>
+      <dl className="tabular mt-4 text-sm">
         <Row label="You send" value={`${quote.send.amount} ${quote.send.symbol}`} />
-        <Row label="You receive (estimate)" value={`${quote.receive.amount} ${quote.receive.symbol}`} strong />
         <Row label="Guaranteed minimum" value={`${quote.receive.minAmount} ${quote.receive.symbol}`} />
-        <Row label="Network" value={`${quote.send.chainName} → ${quote.receive.chainName}`} />
+        <Row label="Route" value={`${quote.send.chainName} → ${quote.receive.chainName}`} />
         <Row label="Takes about" value={`${minutes} min after your deposit`} />
       </dl>
-      <button
-        type="button"
-        onClick={onConfirm}
-        disabled={confirming}
-        className="mt-4 w-full rounded-xl bg-fox py-3.5 font-semibold text-snow disabled:opacity-50"
-      >
+      <button type="button" onClick={onConfirm} disabled={confirming} className="btn-primary mt-5 w-full">
         {confirming ? "Creating deposit address…" : "Confirm & get deposit address"}
       </button>
       <p className="mt-2 text-center text-xs text-muted">Nothing moves until you send the deposit from your wallet.</p>
@@ -294,11 +370,11 @@ function ReviewCard({ quote, onConfirm, confirming }: { quote: SwapQuote; onConf
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4">
+    <div className="flex justify-between gap-4 border-t border-line py-2.5">
       <dt className="text-muted">{label}</dt>
-      <dd className={strong ? "font-semibold text-snow" : "text-snow/90"}>{value}</dd>
+      <dd className="text-right text-snow/90">{value}</dd>
     </div>
   );
 }

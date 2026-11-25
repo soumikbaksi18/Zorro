@@ -5,6 +5,7 @@ import type { HistoryPoint, HistoryRange, Spot } from "@/lib/prices";
 import { useCurrency } from "@/lib/client-prefs";
 import { formatFiat, formatPct, timeAgo } from "@/lib/format";
 import { PriceChart } from "./PriceChart";
+import { QuickActions } from "./QuickActions";
 
 const POLL_MS = 15_000;
 const RANGES: { key: HistoryRange; label: string }[] = [
@@ -13,6 +14,7 @@ const RANGES: { key: HistoryRange; label: string }[] = [
   { key: "30d", label: "30D" },
 ];
 
+/** The home hero: live ZEC price, chart and quick actions (after Zeno's portfolio card). */
 export function Market() {
   const [currency, setCurrency] = useCurrency();
   const [spot, setSpot] = useState<Spot | null>(null);
@@ -76,28 +78,18 @@ export function Market() {
   const change = range === "1d" ? (spot?.change24hPct ?? rangeChange) : rangeChange;
 
   return (
-    <section className="rounded-3xl border border-line bg-surface p-5" aria-labelledby="zec-price">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 id="zec-price" className="text-sm text-muted">
-            ZEC price
-          </h2>
-          <p className="tabular mt-1 text-4xl font-semibold tracking-tight">
-            {price !== null ? formatFiat(price, currency) : spotError ? "—" : <Skeleton />}
-          </p>
-          <p className="tabular mt-1 text-sm text-muted">
-            {otherPrice !== null && spot?.usdInr ? formatFiat(otherPrice, otherCurrency) : " "}
-          </p>
-        </div>
-        <div className="flex rounded-full border border-line p-0.5 text-xs font-medium" role="group" aria-label="Currency">
+    <section className="panel-hero p-5" aria-labelledby="zec-price">
+      <div className="flex items-start justify-between gap-3">
+        <h2 id="zec-price" className="eyebrow">
+          ZEC price
+        </h2>
+        <div className="flex rounded-full border border-line p-0.5 font-mono text-[10px] tracking-[0.1em]" role="group" aria-label="Currency">
           {(["INR", "USD"] as const).map((c) => (
             <button
               key={c}
               onClick={() => setCurrency(c)}
               aria-pressed={currency === c}
-              className={`rounded-full px-3 py-1.5 transition-colors ${
-                currency === c ? "bg-fox text-snow" : "text-muted"
-              }`}
+              className={`rounded-full px-2.5 py-1 transition-colors ${currency === c ? "bg-fox text-snow" : "text-muted hover:text-snow"}`}
             >
               {c}
             </button>
@@ -105,47 +97,49 @@ export function Market() {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-sm">
+      <p className="tabular mt-3 text-[44px] leading-none font-light tracking-[-0.03em]">
+        {price !== null ? formatFiat(price, currency) : spotError ? "—" : <Skeleton />}
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+        {otherPrice !== null && spot?.usdInr ? (
+          <span className="tabular text-muted">{formatFiat(otherPrice, otherCurrency)}</span>
+        ) : null}
         {change !== null && (
           <span
-            className={`tabular rounded-full px-2 py-0.5 font-medium ${
+            className={`tabular rounded-full px-2 py-0.5 text-xs font-medium ${
               change >= 0 ? "bg-up/15 text-up" : "bg-down/15 text-down"
             }`}
           >
             {formatPct(change)}
           </span>
         )}
-        <span className="text-muted">
+        <span className="font-mono text-[10px] tracking-[0.1em] text-dim uppercase">
           {spotError && !spot
-            ? "Price unavailable. Retrying…"
+            ? "Price unavailable · retrying"
             : spot && now !== null
               ? `via ${spot.source === "near-intents" ? "NEAR Intents" : "CoinGecko"} · ${timeAgo(spot.updatedAt, now)}`
-              : "Loading…"}
+              : "Loading"}
         </span>
       </div>
 
-      <div className="mt-4 -mx-1">
+      <div className="-mx-1 mt-5">
         <PriceChart points={chartPoints} multiplier={multiplier} showTime={range === "1d"} />
       </div>
 
-      <div className="mt-3 flex gap-2" role="group" aria-label="Chart range">
+      <div className="tabs mt-2" role="group" aria-label="Chart range">
         {RANGES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setRange(r.key)}
-            aria-pressed={range === r.key}
-            className={`flex-1 rounded-xl py-2 text-sm font-medium transition-colors ${
-              range === r.key ? "bg-surface-2 text-snow" : "text-muted hover:text-snow"
-            }`}
-          >
+          <button key={r.key} onClick={() => setRange(r.key)} aria-pressed={range === r.key} className="tab">
             {r.label}
           </button>
         ))}
       </div>
+
+      <QuickActions />
     </section>
   );
 }
 
 function Skeleton() {
-  return <span className="inline-block h-9 w-44 animate-pulse rounded-lg bg-surface-2 align-middle" />;
+  return <span className="inline-block h-11 w-52 animate-pulse rounded-lg bg-surface-2 align-middle" />;
 }

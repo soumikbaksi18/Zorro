@@ -55,7 +55,7 @@ export function SwapTracker({ id }: { id: string }) {
 
   if (!swap) {
     return (
-      <div className="rounded-2xl border border-line bg-surface p-5">
+      <div className="panel p-5">
         <h1 className="text-xl font-semibold">Swap not on this phone</h1>
         <p className="mt-2 text-sm text-muted">
           Zorro keeps swaps on the device that created them.
@@ -75,10 +75,10 @@ export function SwapTracker({ id }: { id: string }) {
   return (
     <>
       <header>
-        <Link href="/orders" className="text-sm text-muted hover:text-snow">
+        <Link href="/orders" className="eyebrow hover:text-fox-light">
           ← Orders
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+        <h1 className="page-title mt-3">
           {quote.direction === "sell" ? "Sell" : "Buy"} {quote.direction === "sell" ? quote.send.amount : quote.receive.amount} ZEC
         </h1>
         <div className="mt-2 flex items-center gap-2">
@@ -90,18 +90,18 @@ export function SwapTracker({ id }: { id: string }) {
       <Steps step={step} failed={tone === "bad"} />
 
       {status === "PENDING_DEPOSIT" && quote.payment && quote.depositAddress && (
-        <section className="flex flex-col items-center gap-4 rounded-3xl border border-line bg-surface p-5" aria-label="Deposit">
-          <p className="text-center text-sm text-muted">
-            Send exactly
-            <span className="tabular mt-1 block text-3xl font-semibold text-snow">
+        <section className="panel-hero flex flex-col items-center gap-4 p-5" aria-label="Deposit">
+          <p className="text-center">
+            <span className="eyebrow">Send exactly</span>
+            <span className="tabular mt-2 block text-[34px] leading-none font-light tracking-[-0.03em] text-snow">
               {quote.send.amount} {quote.send.symbol}
             </span>
-            {quote.send.chainName !== "Zcash" && <span className="block">on {quote.send.chainName}</span>}
+            {quote.send.chainName !== "Zcash" && <span className="mt-1.5 block text-sm text-muted">on {quote.send.chainName}</span>}
           </p>
           <QrCode value={quote.payment.uri} />
           <a
             href={quote.payment.openUrl}
-            className="w-full rounded-2xl bg-fox py-3.5 text-center font-semibold text-snow"
+            className="btn-primary w-full"
           >
             Open in wallet
           </a>
@@ -147,7 +147,8 @@ export function SwapTracker({ id }: { id: string }) {
         </Result>
       )}
 
-      <section className="rounded-2xl border border-line bg-surface p-4">
+      <section className="panel p-4">
+        <p className="eyebrow mb-2">Details</p>
         <dl className="tabular space-y-2 text-sm">
           <Detail label="You send" value={`${quote.send.amount} ${quote.send.symbol} (${quote.send.chainName})`} />
           <Detail label="You receive (est.)" value={`${quote.receive.amount} ${quote.receive.symbol} (${quote.receive.chainName})`} />
@@ -185,9 +186,9 @@ function Steps({ step, failed }: { step: number; failed: boolean }) {
 
 function CopyRow({ label, value, display }: { label: string; value: string; display: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel px-3 py-2.5">
       <div className="min-w-0">
-        <p className="text-xs text-muted">{label}</p>
+        <p className="eyebrow text-[9px]">{label}</p>
         <p className="truncate font-mono text-sm">{display}</p>
       </div>
       <CopyButton value={value} />

@@ -6,11 +6,11 @@ export const metadata: Metadata = { title: "Swap status · Zorro" };
 
 export default function SwapStatusPage({ params }: PageProps<"/swap/[id]">) {
   return (
-    <main className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
       <Suspense fallback={<p className="text-muted">Loading swap…</p>}>
         <Tracker params={params} />
       </Suspense>
-    </main>
+    </div>
   );
 }
 

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Suspense } from "react";
-import { BottomNav, NavBar } from "@/components/BottomNav";
+import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zorro: ZEC take-profit, stop-loss & DCA",
+  title: "Zorro: private ZEC trading bots",
   description:
-    "Set take-profit, stop-loss, limit orders and recurring buys for Zcash, powered by NEAR Intents. Zorro never holds your funds.",
+    "Private, automatic trading for Zcash: swaps, stop-loss, DCA and more through NEAR Intents. Zorro never holds your keys or funds.",
   applicationName: "Zorro",
   appleWebApp: {
     capable: true,
@@ -37,12 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <body className="min-h-dvh font-sans">
-        <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(5rem+env(safe-area-inset-bottom))]">
-          {children}
-        </div>
-        <Suspense fallback={<NavBar />}>
-          <BottomNav />
-        </Suspense>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

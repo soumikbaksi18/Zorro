@@ -45,10 +45,10 @@ export function SystemStatus() {
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-surface">
+    <section className="panel" aria-label="System status">
       <div className="flex items-center justify-between p-4">
         <div>
-          <h2 className="font-medium">System status</h2>
+          <h2 className="eyebrow text-snow/90">System status</h2>
           <p className="text-xs text-muted">
             {report ? `Checked ${new Date(report.checkedAt).toLocaleTimeString()}` : "Checking connections…"}
           </p>
@@ -57,7 +57,7 @@ export function SystemStatus() {
           type="button"
           onClick={recheck}
           disabled={loading}
-          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+          className="rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] uppercase hover:border-fox-light disabled:opacity-40"
         >
           {loading ? "Checking…" : "Recheck"}
         </button>

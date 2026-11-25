@@ -1,66 +1,48 @@
-// The order types Zorro offers, and how each one executes (see PLAN.md §4.2).
+// The bots Zorro offers (PLAN.md §3) and how each one executes.
 
-export type OrderTypeKey = "swap" | "take-profit" | "stop-loss" | "limit-buy" | "dca" | "alert";
+import type { LucideIcon } from "lucide-react";
+import { ChartNoAxesCombined, Grid3x3, Repeat, ShieldAlert } from "lucide-react";
 
-export type OrderType = {
-  key: OrderTypeKey;
+export type BotType = {
+  key: "smart-dca" | "stop-loss" | "tp-ladder" | "grid";
   title: string;
   example: string;
-  execution: "auto" | "one-tap";
   how: string;
-  phase: number; // build phase in PLAN.md §11
-  /** Set once the feature is built. */
-  href?: string;
+  icon: LucideIcon;
+  phase: number; // build phase in PLAN.md §8
 };
 
-export const ORDER_TYPES: OrderType[] = [
-  {
-    key: "swap",
-    title: "Swap now",
-    example: "Sell 1 ZEC for USDC right now",
-    execution: "one-tap",
-    how: "Get a live NEAR Intents quote, then confirm the payment in your own wallet.",
-    phase: 2,
-    href: "/swap",
-  },
-  {
-    key: "take-profit",
-    title: "Take-profit",
-    example: "Sell 2 ZEC if price ≥ $900",
-    execution: "auto",
-    how: "A native NEAR Intents limit order. Deposit once and it fills on its own when the price is hit.",
-    phase: 3,
-  },
+export const BOT_TYPES: BotType[] = [
   {
     key: "stop-loss",
-    title: "Stop-loss",
-    example: "Sell 2 ZEC if price ≤ $600",
-    execution: "one-tap",
-    how: "Zorro watches the price. When it triggers, you get a notification. Tap it to confirm the sale in your wallet.",
-    phase: 4,
+    title: "Stop-loss & trailing stop",
+    example: "Sell 2 ZEC if price falls 10% from its peak",
+    how: "Zorro watches the price 24/7 and sells through NEAR Intents the moment your rule triggers.",
+    icon: ShieldAlert,
+    phase: 6,
   },
   {
-    key: "limit-buy",
-    title: "Limit buy",
-    example: "Buy ZEC with 100 USDC if price ≤ $650",
-    execution: "auto",
-    how: "A native NEAR Intents limit order funded with USDC. It fills on its own when the price is hit.",
-    phase: 3,
+    key: "smart-dca",
+    title: "Smart DCA",
+    example: "Buy ₹2,000 of ZEC every Friday, more on dips",
+    how: "Buys on schedule from your bot wallet, and a little more when price is below its average.",
+    icon: Repeat,
+    phase: 6,
   },
   {
-    key: "dca",
-    title: "DCA",
-    example: "Buy ₹2,000 of ZEC every Friday",
-    execution: "one-tap",
-    how: "On schedule, Zorro prepares a quote and notifies you. One tap to approve. ZEC lands in your shielded address.",
-    phase: 5,
+    key: "tp-ladder",
+    title: "Take-profit ladder",
+    example: "Sell 25% at $800, 25% at $900, …",
+    how: "Places resting NEAR Intents limit orders that fill on their own as the price climbs.",
+    icon: ChartNoAxesCombined,
+    phase: 7,
   },
   {
-    key: "alert",
-    title: "Price alert",
-    example: "Notify me at $800",
-    execution: "auto",
-    how: "Zorro watches the price and sends a notification. No funds involved.",
-    phase: 4,
+    key: "grid",
+    title: "Grid",
+    example: "Buy low, sell high between $600 and $900",
+    how: "A ladder of buy and sell orders that re-arms after every fill, so you profit from price swings.",
+    icon: Grid3x3,
+    phase: 7,
   },
 ];

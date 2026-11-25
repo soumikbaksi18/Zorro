@@ -8,17 +8,17 @@ export function SwapList() {
   const swaps = useSwaps();
 
   if (swaps === null) {
-    return <div className="h-24 animate-pulse rounded-2xl bg-surface" />;
+    return <div className="panel h-24 animate-pulse" />;
   }
 
   if (swaps.length === 0) {
     return (
-      <section className="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-12 text-center">
-        <p className="font-medium">No orders yet</p>
-        <p className="mt-1 max-w-64 text-sm text-muted">
-          Swaps, take-profits, stop-losses and DCA plans show up here with their live status.
+      <section className="panel flex flex-col items-center border-dashed px-6 py-12 text-center">
+        <p className="eyebrow">Nothing here yet</p>
+        <p className="mt-3 max-w-72 text-sm text-muted">
+          Swaps and bot trades show up here with their live status.
         </p>
-        <Link href="/swap" className="mt-5 rounded-xl bg-fox px-5 py-2.5 text-sm font-medium text-snow">
+        <Link href="/swap" className="btn-primary mt-6 min-h-11 px-5 text-[13px]">
           Make a swap
         </Link>
       </section>
@@ -33,7 +33,7 @@ export function SwapList() {
           <li key={s.id}>
             <Link
               href={`/swap/${encodeURIComponent(s.id)}`}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 transition-colors hover:border-fox/60"
+              className="panel flex items-center justify-between gap-3 p-4 transition-colors hover:border-fox/60 hover:bg-fox/5"
             >
               <div className="min-w-0">
                 <p className="font-medium">

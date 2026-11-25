@@ -1,29 +1,73 @@
 import type { Metadata } from "next";
+import { Bot, Globe, Link2, Server, Sparkles } from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { SystemStatus } from "./SystemStatus";
 
 export const metadata: Metadata = { title: "Settings · Zorro" };
 
+const VISIBILITY = [
+  {
+    icon: Server,
+    title: "Zorro's server",
+    body: "Forwards swap quotes and will run your bots. Stores bot settings and an encrypted bot permission, never your seed phrase, keys or funds. Swaps stay on this phone.",
+  },
+  {
+    icon: Globe,
+    title: "NEAR Intents",
+    body: "Executes swaps and holds bot-wallet funds under the limits you sign. Sees amounts, addresses and timing. Refund addresses are recorded publicly on NEAR.",
+  },
+  {
+    icon: Link2,
+    title: "Blockchains",
+    body: "Swap deposits and USDC transfers are public on their chains. ZEC delivered by NEAR Intents goes to transparent addresses: shield it in your wallet afterwards.",
+  },
+  {
+    icon: Sparkles,
+    title: "AI service",
+    body: "Only sees the strategy text you type. Zorro blocks addresses, balances, keys and tokens from being sent to it.",
+  },
+  {
+    icon: Bot,
+    title: "Bots (coming soon)",
+    body: "Can only trade within your signed policy and can only send funds to addresses you list. You can freeze them or revoke Zorro's access anytime.",
+  },
+];
+
 export default function SettingsPage() {
   return (
-    <main className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="eyebrow">Settings</p>
+        <h1 className="page-title mt-3">Preferences, status &amp; privacy</h1>
       </header>
 
-      <SettingsPanel />
+      <div className="grid gap-6">
+        <div className="flex flex-col gap-6">
+          <SettingsPanel />
+          <SystemStatus />
+        </div>
 
-      <SystemStatus />
-
-      <section className="rounded-2xl border border-line bg-surface p-4 text-sm leading-relaxed">
-        <h2 className="font-medium">How Zorro keeps your funds safe</h2>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted">
-          <li>Zorro never asks for your seed phrase and never holds your ZEC or USDC.</li>
-          <li>Every trade is a payment you confirm in your own wallet (Zodl, MetaMask, Phantom).</li>
-          <li>Swaps run through NEAR Intents. Swaps are publicly visible on NEAR, so use a fresh shielded address for each one.</li>
-          <li>There are no accounts. Your orders are tied to an anonymous ID stored only on this phone.</li>
-        </ul>
-      </section>
-    </main>
+        <section className="panel p-5" aria-labelledby="trust-heading">
+          <p className="eyebrow">Trust model</p>
+          <h2 id="trust-heading" className="mt-3 text-xl font-light tracking-[-0.02em]">
+            What everyone can see
+          </h2>
+          <div className="mt-4">
+            {VISIBILITY.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="visibility-row">
+                <Icon size={16} strokeWidth={1.6} aria-hidden="true" />
+                <div>
+                  <strong>{title}</strong>
+                  <p>{body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 border-t border-line pt-4 text-xs text-leaf">
+            No Zorro account and no analytics.
+          </p>
+        </section>
+      </div>
+    </div>
   );
 }
