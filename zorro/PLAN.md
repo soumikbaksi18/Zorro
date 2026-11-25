@@ -1,6 +1,6 @@
-# Zorro: Plan
+# Zorro Bots: Plan
 
-**Zorro is a phone-first web app for ZEC holders.** You can set take-profit, stop-loss, limit orders and recurring buys (DCA) for Zcash, all run through NEAR Intents. Zorro never holds your keys or your funds.
+**Zorro is a phone-first app of private, automatic trading bots for ZEC.** Users pick a strategy (DCA, stop-loss, take-profit ladder, grid), or describe one in plain words to the AI assistant. A bot runs it 24/7 from the user's own NEAR Intents agent wallet, within spending limits they sign once with Face ID or a fingerprint. Zorro can trade within those limits but can never send funds anywhere except the user's own addresses.
 
 Built for the Zcash India "Build on Zcash" bounty (Nov 2026).
 
@@ -8,250 +8,178 @@ Built for the Zcash India "Build on Zcash" bounty (Nov 2026).
 
 ## 1. Problem and positioning
 
-ZEC holders can already do instant swaps (Zodl, Cake, Brave, ZTippy), and NEAR Intents added native limit orders to its 1Click API on 28 Aug 2026. Things still missing for an ordinary holder on their phone:
+- ZEC holders can swap (Zodl, Cake, Brave), and NEAR Intents has native limit orders. But there's **no automated ZEC trading** that keeps users in control of their funds. The only ZEC bots found (3Commas, WunderTrading) run on exchange accounts.
+- **Stop-loss doesn't exist anywhere for ZEC** outside exchanges. NEAR Intents only offers limit orders.
+- Trading bots usually mean handing an exchange or bot service your money. Zorro's pitch: **your funds stay in your own wallet, the bot can only trade within limits you sign, and profits go back to you.**
+- **Private by default:** agent balances on NEAR Intents are confidential, and ZEC is the asset.
 
-- **Stop-loss.** NEAR Intents only supports `LIMIT` orders. It can't "sell if the price drops below X".
-- **Recurring buys that land shielded.** Existing ZEC DCA (Kraken, 3Commas) runs on exchange accounts, and nothing lands in a shielded address.
-- **One place to see and manage everything** (orders, schedules, alerts) on a phone, with INR prices.
-
-**Our angle:** a simple, phone-first "set it and forget it" app for ZEC that is shielded by default and never holds your funds. It works with the user's own wallet (Zodl) through payment links.
-
-> **Novelty risk.** The Zodl Desktop site advertises limit orders, TWAP and DCA for shielded ZEC. We couldn't confirm it's live or official. Our differentiators are stop-loss, phone-first design, shielded DCA and the India/INR focus. Verify Zodl Desktop's actual features in Phase 0 and adjust the pitch.
+> **Novelty check (25 Nov 2026):** no non-custodial ZEC bot found. nearkit (a NEAR toolkit) has generic automation, not ZEC-focused. Zodl Desktop advertises limit orders, TWAP and DCA for shielded ZEC (unverified). Zorro's differentiators: stop-loss and trailing stop, grid, backtesting, AI strategy assistant, signed spending limits, phone-first with INR.
 
 ---
 
-## 2. Features
+## 2. How it works
 
-### MVP (bounty submission)
-| Feature | What the user does |
+```
+ User's phone                      Zorro server                     NEAR Intents
+ ────────────                      ────────────                     ────────────
+ 1. Create passkey (Face ID) ──►   builds agent_create intent ──►  Agent API
+ 2. Sign ONE intent:                (policy + first grant)          creates the user's
+    "this agent may swap ZEC/USDC,                                  agent wallet (custody:
+     max $X/day, withdraw only                                      OutLayer), policy on-chain
+     to MY addresses"
+ 3. Deposit ZEC (ZIP-321 link) ─────────────────────────────────►  agent balance (confidential)
+ 4. Choose/describe a bot ──────►  bot engine (24/7 worker)
+                                    • watches price
+                                    • decides (strategy rules)
+                                    • swaps / limit orders  ──────►  executed within the signed policy
+                                      with the grant token
+ 5. Withdraw profits ◄──────────────────────────────────────────── only to the user's listed addresses
+```
+
+**Who controls what**
+| Party | Can do | Cannot do |
+|---|---|---|
+| User (passkey owner) | Create/freeze/delete agent, change policy, revoke Zorro's grant, approve withdrawals | Lose access if passkey is lost: owner keys can't be changed (passkeys sync via iCloud/Google, so this is usually fine) |
+| Zorro (grant holder) | Swaps and limit orders within policy; withdrawals only to user-listed addresses | Change the policy, add destinations, exceed budget or limits |
+| NEAR Intents / OutLayer | Hold and settle funds per the signed policy | (Trust assumption: their custody wallet and TEE-hosted API) |
+
+**Manual mode stays:** the "Swap now" screen (already built) keeps working for one-off swaps from the user's own wallet.
+
+---
+
+## 3. Bots
+
+| Bot | Rule | Executes via | MVP? |
+|---|---|---|---|
+| **Smart DCA** | Buy $X every period; buy more when price is below its average | Market swap (USDC → ZEC) | ✅ |
+| **Stop-loss / trailing stop** | Sell when price ≤ X, or drops Y% from its peak since start | Market swap (ZEC → USDC), triggered by Zorro's price watcher | ✅ |
+| **Take-profit ladder** | Sell 25% at $800, 25% at $900, … | Native resting limit orders | ✅ |
+| **Grid** | Buy/sell repeatedly within a price range at N levels | Limit-order ladder, re-armed as orders fill | ✅ (showcase) |
+| TWAP exit | Sell a large amount in slices over time | Scheduled swaps | Later |
+| Rebalance | Keep ZEC/USDC at a target ratio | Periodic swaps | Later |
+
+Every bot has: **backtest before launch** (last 1/7/30 days, with fees), **pause/resume**, **activity log with reasons**, and **"sweep profits to my address"**.
+
+---
+
+## 4. AI assistant
+
+The AI turns words into bots and explains them. It **never places trades itself**: it only produces a bot configuration, which is validated, backtested and confirmed by the user. All execution goes through the deterministic bot engine and the signed policy.
+
+| Feature | Example |
 |---|---|
-| Live price | ZEC price in USD and INR, simple chart |
-| Swap now | Market swap ZEC ↔ USDC with one tap |
-| Take-profit / limit sell | "Sell 2 ZEC if price ≥ $900" |
-| Limit buy | "Buy ZEC with 100 USDC if price ≤ $650" |
-| Stop-loss | "Sell 2 ZEC if price ≤ $600" |
-| DCA (recurring buy) | "Buy ₹2,000 of ZEC every Friday", landing in a shielded address |
-| Price alerts | "Notify me at $800" |
-| Order tracker | Status of every order and swap (open, filled, refunded) |
-| Push notifications | Phone notification when something triggers or fills |
+| Describe a strategy | "Sell half my ZEC if it drops 10%, buy back if it recovers 5%" → stop-loss + re-entry bot config |
+| Explain a backtest | "This grid made 3.1% over 30 days, mostly from the 22–24 Nov swings" |
+| Explain an action | "Why did my bot sell?" → reads the activity log |
+| (Later) AI tuning | Suggests parameter changes within user-set ranges; user approves |
 
-### Later (only if time allows)
-- **Bracket orders:** take-profit and stop-loss together on the same ZEC; one cancels the other.
-- **DCA sell:** recurring take-profit, e.g. "sell 0.1 ZEC every week".
-- **Portfolio view:** read-only, using a viewing key, decrypted in the browser.
-- **Privacy checks:** warn about reused refund addresses, round amounts and predictable timing.
-- **Fully automatic execution:** an optional small "strategy wallet" with spending limits (see §4.3).
-- **Telegram notifications** as an alternative to web push.
+- **Provider:** DeepSeek, an OpenAI-compatible API (`DEEPSEEK_API_KEY`, server-side only). The UI says "AI-powered" without naming the provider.
+- **Data sent:** strategy text, market data and bot settings only. **Never** addresses, balances, keys or tokens.
+- **Disclosure in UI:** "AI features send your strategy text to a third-party AI service."
+- **Safety:** model output must pass a strict schema (zod) and range checks; anything invalid is rejected, not guessed.
 
 ---
 
-## 3. What we verified about NEAR Intents (24–25 Nov 2026)
+## 5. Verified facts (25 Nov 2026)
 
-Tested directly against `https://1click.chaindefuser.com`:
+**1Click API** (`https://1click.chaindefuser.com`)
+- Quotes and status work without a key. With our partner key, quotes show the documented fee (~0.20%, 0.01% for stablecoin pairs). Keyless quotes don't show the documented 0.25% surcharge.
+- Shielded `u1…` addresses pass validation as ZEC recipient/refund, **but the docs list ZEC as "transparent addresses only"**. Must test real delivery to `u1`.
+- Minimum ZEC swap 0.00132 ZEC. Buying ZEC has a fixed ~0.00032 ZEC withdrawal fee.
+- ZEC deposit addresses are transparent (`t1…`). Deposit window ~3 days.
 
-- **Native ZEC is supported:** asset ID `nep141:zec.omft.near`, 8 decimals. The token list includes a live price.
-- **Dry quotes work without an API key.** 1 ZEC → 737.21 USDC on Base, time estimate ~457 s, refund fee 0.00032 ZEC.
-- **Real quotes and limit orders need auth** (`X-API-Key` or JWT). We need a NEAR Intents partner API key.
-- **Limit orders** (`POST /v0/orders`, `orderType: LIMIT`, `side: BUY|SELL`) support `depositType: ORIGIN_CHAIN`. The user sends ZEC to a normal deposit address, and the order **rests until filled, cancelled or expired** (default deadline 7 days, partial fills allowed).
-- **No stop-loss, TWAP or DCA order types.** The spec reserves `UNTRIGGERED` "for future order types", so NEAR may add triggers later.
-- **No testnet.** NEAR Intents is mainnet only, so we test with small real amounts.
-
-Stablecoin asset IDs we'll use first:
-- USDC on Base: `nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near`
-- USDC on Solana: `nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near`
-
----
-
-## 4. How it works
-
-### 4.1 Core principle: every action is a payment link
-
-Zorro never asks for a seed phrase and never connects to a wallet. When money needs to move, Zorro creates a **payment link** with the exact amount and destination already filled in. The user taps it, their own wallet opens, and they confirm.
-
-| Paying with | Link format | Opens in |
-|---|---|---|
-| ZEC | ZIP-321 (`zcash:<addr>?amount=…`) | Zodl and other Zcash wallets |
-| USDC on Base | EIP-681 (`ethereum:…/transfer?…`) | MetaMask, Coinbase Wallet |
-| USDC on Solana | Solana Pay (`solana:<addr>?amount=…&spl-token=…`) | Phantom, Solflare |
-
-Funds are only ever in **the user's wallet** or **in NEAR Intents** (a deposit address or a resting order). Never with Zorro.
-
-### 4.2 How each feature runs
-
-| Feature | Mechanism | Fully automatic? |
-|---|---|---|
-| Swap now | `POST /v0/quote` → deposit address → payment link → track with `/v0/status` | User confirms once |
-| Take-profit / limit sell | **Native** NEAR Intents `LIMIT SELL` order. User deposits ZEC once and it rests until the price is hit | ✅ Yes, after one deposit |
-| Limit buy | **Native** `LIMIT BUY` order funded with USDC | ✅ Yes, after one deposit |
-| Stop-loss | Zorro's background worker watches the price. When it triggers: fresh quote → push notification → tap → payment link → user confirms | ⚠️ One tap when triggered |
-| DCA | Zorro's scheduler, each run: fresh quote (USDC → ZEC, recipient = the user's shielded address) → push → tap → confirm | ⚠️ One tap per buy |
-| Price alerts | Worker watches price → push | ✅ |
-
-**Why stop-loss and DCA need one tap:** quotes expire and Zorro can't sign for the user. That's the cost of never holding funds, and we'll say so openly in the app and the pitch.
-
-### 4.3 Possible upgrade: fully automatic mode
-An optional, small **strategy wallet**: a dedicated shielded wallet held **on the user's own device**, funded with a capped budget, that signs stop-loss and DCA trades automatically within limits the user sets. Post-MVP, because it means in-browser Zcash signing (WebZjs) and careful key storage.
+**Agent API** (`https://api.agentsonintents.com`, spec at `/openapi.json`)
+- Our Agent API key works (`/v1/whoami` 200). It's a separate key from the 1Click key.
+- **Experimental, mainnet-only beta. Docs warn users "may lose all assets".** No testnet.
+- Owner types live: **NEAR and passkey** (EVM off). Passkey: ES256, user verification required, P-256 SPKI public key, exact HTTPS origin, no cross-site iframes.
+- **Native ZEC is in the agent token list** (`nep141:zec.omft.near`), plus USDC on many chains.
+- Agent creation: `POST /v1/generate-intent` (`agent_create` with owner, full policy and optional first grant, all under **one signature**) → owner signs (`webauthn`) → `POST /v1/submit-intent` → poll `GET /v1/status`.
+- Grants: Zorro generates an `ngt_…` token, sends only its SHA-256 hash; sends `X-Grant-Token` on trades. Max 365 days.
+- Policy: actions (`swap`, `limit_order`, `withdraw`, `transfer`), assets, per-tx/hourly/daily/monthly limits, USD budget, max actions per hour, destinations (`only` list), owner approval, timelock, schedule, `limit_order.max_deviation_bps` (0–300).
+- Actions: `deposit` (address from another chain), `swap` (with `dry` quote), `limit-orders` (place/list/cancel), `withdraw`, `balances`, receipts and history.
+- Quotas: 1,000 agents/day, 1,500 req/min per key, **1,000 custody ops per agent per 24h**, one money action at a time per agent, policy change ≤ 1 per 10 min. Every live action needs an `Idempotency-Key`.
 
 ---
 
-## 5. Architecture
+## 6. Architecture
+
+| Layer | Choice |
+|---|---|
+| App | Next.js 16 (App Router, Cache Components) + TypeScript + Tailwind, installable phone web app (existing) |
+| Passkeys | WebAuthn in the browser (`@simplewebauthn/browser`), ES256, convert COSE → P-256 SPKI |
+| Database | SQLite via Drizzle (dev) → Postgres (deployed): users, agents, encrypted grant tokens, bots, bot runs, activity log |
+| Secrets at rest | Grant tokens encrypted (AES-256-GCM) with a server key (`ZORRO_ENCRYPTION_KEY`) |
+| Bot engine | Long-running Node worker: price loop (15s), strategy evaluation, execution queue (one action per agent at a time), retries with the same Idempotency-Key |
+| Backtester | Pure TypeScript, runs strategies over CoinGecko history with a fee model |
+| AI | DeepSeek chat completions with JSON output, validated by zod |
+| Hosting | Railway or Fly.io (always-on worker + HTTPS, required for passkeys). Local testing over an HTTPS tunnel (e.g. cloudflared) |
+
+**Identity:** the passkey *is* the account. No email or password.
+
+---
+
+## 7. Default policy (proposed)
 
 ```
- ┌──────────────── Phone (installed web app) ───────────────┐
- │  Next.js UI  ·  service worker (push)  ·  device ID     │
- └───────────────┬──────────────────────────▲───────────────┘
-                 │ HTTPS                    │ Web Push
- ┌───────────────▼──────────────────────────┴───────────────┐
- │                   Zorro server (Node)                    │
- │  API routes: orders, DCA plans, alerts, push subscribe   │
- │  Worker (every 15–30 s):                                 │
- │    • price poller  • trigger engine (stop-loss, alerts)  │
- │    • DCA scheduler • status poller  • push sender        │
- │  Database: SQLite (dev) → Postgres (deployed)            │
- └───────────────┬──────────────────────────────────────────┘
-                 │
- ┌───────────────▼──────────────┐   ┌──────────────────────────┐
- │  NEAR Intents 1Click API     │   │  Prices: 1Click token    │
- │  quote · orders · status     │   │  list + CoinGecko + an   │
- └──────────────────────────────┘   │  INR exchange rate       │
-                                    └──────────────────────────┘
- User's own wallets: Zodl (ZIP-321) · MetaMask (EIP-681) · Phantom (Solana Pay)
+actions:        ["swap", "limit_order", "withdraw"]
+assets:         ZEC, USDC (Base), USDC (Solana)
+destinations:   only: [user's own ZEC address, user's own USDC address]
+budget:         daily_usd = user's choice (default $50)
+limits:         per_transaction ≤ budget; max_actions_per_hour = 20
+limit_order:    max_deviation_bps = 100
+owner_approval: false (true = every withdrawal needs Face ID)
+confidential:   true
 ```
 
-**No accounts.** Each phone gets a random device ID stored in the browser, linked to its push subscription. Orders belong to that device. Optional later: a backup code to move to a new phone.
+The UI shows this in plain words before the user signs: "Zorro can trade up to $50/day of ZEC and USDC. It can only send money to these 2 addresses, which are yours."
 
 ---
 
-## 6. Tech stack
-
-| Layer | Choice | Why |
-|---|---|---|
-| Frontend | Next.js (App Router) + TypeScript + Tailwind | Fast to build, installable as a phone app |
-| Installable app | Web app manifest + service worker | Add to home screen, push notifications |
-| Charts | TradingView `lightweight-charts` | Small, works well on phones |
-| Backend | Next.js API routes + a Node worker process | One codebase, one language |
-| Database | Drizzle ORM + SQLite → Postgres | Simple locally, easy to move |
-| Push | `web-push` (VAPID) | Standard, free |
-| NEAR Intents | Small typed `fetch` client (or `@defuse-protocol/one-click-sdk-typescript`) | Only ~5 endpoints needed |
-| Validation | `zod` | Validate all API input and output |
-| Hosting | Railway or Fly.io (one service runs app and worker) | The worker must run continuously; Vercel serverless can't |
-
----
-
-## 7. Data model
-
-```
-devices      id, push_subscription, created_at
-addresses    id, device_id, chain (zec|base|sol), address, label
-orders       id, device_id, kind (market|limit|take_profit|stop_loss),
-             side (buy|sell), base_amount, trigger_price, slippage_bps,
-             status (armed|triggered|awaiting_deposit|open|filled|refunded|
-                     expired|cancelled|failed),
-             oneclick_order_id, deposit_address, quote_deadline,
-             created_at, updated_at
-dca_plans    id, device_id, source_asset, amount_fiat, fiat (INR|USD),
-             cadence (daily|weekly|monthly), next_run_at, jitter (bool), active
-dca_runs     id, plan_id, quote_id, deposit_address, status, created_at
-alerts       id, device_id, direction (above|below), price, fired_at
-prices       ts, zec_usd, usd_inr   (short rolling window, for chart and triggers)
-```
-
----
-
-## 8. Key flows
-
-**Stop-loss**
-1. User: "Sell 2 ZEC if price ≤ $600", picks USDC on Base, enters their Base address.
-2. Worker sees ZEC ≤ $600 → requests a live quote (exact input 2 ZEC, user's slippage).
-3. Push: "🦊 Stop-loss hit at $598. Tap to sell 2 ZEC (quote valid 20 min)."
-4. Tap → order screen → "Open in Zodl" (ZIP-321 link) → user confirms.
-5. Worker tracks `/v0/status` → push "Done: 1,182 USDC sent to your Base wallet."
-6. If the quote expires before the user confirms, Zorro fetches a new one on next open.
-
-**Take-profit**
-1. User: "Sell 2 ZEC at $900" → Zorro creates a native `LIMIT SELL` order.
-2. User deposits 2 ZEC with one tap (ZIP-321).
-3. The order rests with NEAR Intents. Zorro polls it, pushes on fill or partial fill, and re-creates it at the 7-day expiry if the user wants.
-
-**DCA**
-1. User: "₹2,000 every Friday, pay with USDC on Solana, deliver to my shielded ZEC address."
-2. Each Friday (± random jitter) → quote USDC → ZEC → push → tap → Phantom opens prefilled → confirm.
-3. ZEC arrives in the user's shielded address. The plan shows runs, average buy price and total stacked.
-
----
-
-## 9. Privacy and security
-
-- **Never** ask for or store a seed phrase or spending key.
-- Store only what's needed (addresses, order settings). Delete completed order data after N days. Let the user delete everything with one button.
-- **Be honest in the app:** NEAR Intents swaps are publicly visible on NEAR, and the refund address is recorded there. Encourage a fresh shielded address for each swap.
-- Optional jitter on DCA timing and amount, so buys are harder to link.
-- Rate-limit the API. Validate every address format before quoting.
-- Keep the NEAR Intents API key on the server only.
-
----
-
-## 10. Risks and open questions (settle in Phase 0)
-
-| # | Question | How we check |
-|---|---|---|
-| 1 | Does 1Click accept a **shielded unified address** (`u1…`) as ZEC recipient and refund address? | One small real swap |
-| 2 | **Minimum amounts** for ZEC quotes and limit orders? | Dry quotes at small sizes |
-| 3 | API key: how to get one, and what are the fees and rate limits? | NEAR Intents partner docs and portal |
-| 4 | How long do quote deposit addresses stay valid? (sets the stop-loss "tap window") | Live quote, read `deadline` |
-| 5 | Is a ZEC-funded `LIMIT SELL` actually fillable, and how quickly? | One small real order |
-| 6 | iPhone push only works after "Add to Home Screen" (iOS 16.4+) | Test on a real iPhone |
-| 7 | Does Zodl open ZIP-321 links from the phone browser with amounts filled in? | Test on Android and iOS |
-| 8 | Is Zodl Desktop's advertised limit/DCA feature real? (affects our pitch) | Install it or check its release notes |
-| 9 | Large exits through NEAR Intents can be held for compliance (one forum report: $589k held 50 days) | Warn users; keep demo amounts small |
-| 10 | "Zorro" is a registered trademark | Fine for a hackathon; revisit before any public launch |
-
----
-
-## 11. Build phases
+## 8. Build phases
 
 | Phase | Goal | Done when |
 |---|---|---|
-| **0. Verify** | Answer the questions in §10 with real tiny transactions | Every question has an answer, and the plan is adjusted |
-| **1. Skeleton** | Installable app, device ID, live ZEC price (USD/INR) and chart | App installs on a phone and shows live price |
-| **2. Swap now** | Quote → payment link → status tracking, end to end | A real ZEC → USDC swap from the phone |
-| **3. Limit and take-profit** | Native 1Click orders: create, deposit, track, cancel | A real resting order fills or cancels correctly |
-| **4. Stop-loss and alerts** | Worker, trigger engine, web push | A push arrives and the tap leads to a completed swap |
-| **5. DCA** | Plans, scheduler, runs, stats | Two scheduled runs complete |
-| **6. Polish** | Order history, empty and error states, privacy notes, **demo mode** | Clean demo on a real phone |
-| **7. Submit** | README, demo video, X post | Entry posted |
+| ✅ 1. Skeleton | Installable app, live price, chart | Done |
+| ✅ 2. Swap now | Manual swaps via 1Click + payment links | Done (needs one real-funds test) |
+| **3. Foundations** | DB, Agent API client, DeepSeek client, HTTPS tunnel, encryption | `whoami`, token list and an AI test call work from the app |
+| **4. Agent wallet** | Passkey sign-up → agent_create + grant (one signature) → policy screen | A real agent exists, owned by a passkey, Zorro holds a working grant |
+| **5. Fund and withdraw** | Deposit ZEC/USDC to the agent (ZIP-321), balances, withdraw to own address | Small real deposit and withdrawal both succeed |
+| **6. Bot engine + first bots** | Worker, Stop-loss/trailing, Smart DCA, activity log | A stop-loss triggers in demo mode and executes a real swap |
+| **7. Limit-order bots** | Take-profit ladder, grid | Ladder and grid place, fill/cancel and re-arm correctly |
+| **8. Backtest + AI** | Backtester; "describe your strategy"; explanations | Plain-English request → valid bot → backtest → launch |
+| **9. Polish and submit** | Demo mode, error states, privacy copy, README, video, X post | Clean demo on a real phone |
 
-**Demo mode:** a hidden switch that overrides the price feed, so judges see a stop-loss trigger live instead of waiting for the market.
+**Demo mode:** a hidden switch that feeds a scripted price path to the bot engine, so judges see a stop-loss and a grid fire live.
 
 ---
 
-## 12. Bounty submission checklist
+## 9. Risks and open questions
 
-- [ ] Public GitHub repo with a clear README (what, why, how it works, how to run)
+| # | Risk / question | Plan |
+|---|---|---|
+| 1 | Agent API is an experimental beta ("may lose all assets") | Small amounts only; say so plainly in the app and pitch |
+| 2 | ZEC to shielded `u1` may not be delivered (docs: transparent only) | Test with a tiny real withdrawal; fall back to `t1` + "shield in Zodl" instruction |
+| 3 | Passkeys need an exact HTTPS origin | HTTPS tunnel for local tests; deploy early |
+| 4 | Zorro's server holds grant tokens | Encrypt at rest; policy caps the damage (no foreign withdrawals, daily budget); user can revoke anytime |
+| 5 | Price watcher accuracy for stop-loss | Use the 1Click/Agent API token price (same venue), plus slippage limits (`min_amount_out`) |
+| 6 | 1,000 custody ops/day per agent | Grid levels and DCA frequency capped so a bot stays far below it |
+| 7 | AI produces a bad strategy | Schema + range validation, mandatory backtest preview, user confirmation |
+| 8 | "Zorro" is a registered trademark | Fine for a hackathon; revisit before public launch |
+
+---
+
+## 10. Brand
+
+- **Logo:** [`brand/zorro-logo.png`](brand/zorro-logo.png), a low-poly masked fox.
+- **Palette:** fox purple `#8A3FC8` (light `#B86AE6`, dark `#5B2491`), accent green `#6CC24A`, gold `#E9B33B`, off-white `#F1EEF5`, background `#0A0A0A`.
+- Green/red keep their price meaning (up/down); gold is for alerts. Use a simplified mark below ~64 px.
+
+---
+
+## 11. Bounty submission checklist
+
+- [ ] Public GitHub repo with a clear README
 - [ ] Deployed app URL that installs on a phone
-- [ ] 2–3 minute demo video: set stop-loss → trigger (demo mode) → push → Zodl → USDC received
-- [ ] **An original public X post tagging @ZcashIND** (a GitHub upload alone doesn't count as an entry)
-- [ ] Confirm the deadline and terms on the @ZcashIND bounty post
-
----
-
-## 13. Brand
-
-- **Logo:** [`brand/zorro-logo.png`](brand/zorro-logo.png), a low-poly masked fox (1254×1254, black background).
-- **Palette (approximate, taken from the logo):**
-  - Fox purple `#8A3FC8`, light `#B86AE6`, dark `#5B2491`
-  - Accent green `#6CC24A`, dark `#2E8B3A`
-  - Gold `#E9B33B`
-  - Off-white `#F1EEF5`
-  - Background `#0A0A0A`
-- **App theme:** dark by default, purple for main actions. Green and red keep their usual price meaning (up and down), and gold is for alerts and notifications.
-- **Small sizes:** the scar and earrings disappear below ~64 px, so make a simplified mark (ears, mask, white muzzle only) for the favicon and notification badge.
-
----
-
-## 14. Decisions needed before building
-
-1. **Deadline and team size.** These set how much of "Later" we attempt.
-2. **Stablecoin chains for v1.** Recommendation: USDC on Base and on Solana only.
-3. **Hosting.** Recommendation: Railway (simplest for app + worker).
-4. **The existing scaffold.** A default Next.js starter was created in `zorro/` before the plan. Keep it as the starting point, or delete it and start fresh in Phase 1.
+- [ ] 2–3 minute demo: create agent with Face ID → deposit → AI builds a stop-loss → demo-mode trigger → swap executes → withdraw
+- [ ] **An original public X post tagging @ZcashIND** (a GitHub upload alone doesn't count)
+- [ ] Confirm deadline and terms on the @ZcashIND bounty post
