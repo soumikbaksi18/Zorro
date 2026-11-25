@@ -9,6 +9,8 @@ export type OrderType = {
   execution: "auto" | "one-tap";
   how: string;
   phase: number; // build phase in PLAN.md §11
+  /** Set once the feature is built. */
+  href?: string;
 };
 
 export const ORDER_TYPES: OrderType[] = [
@@ -19,6 +21,7 @@ export const ORDER_TYPES: OrderType[] = [
     execution: "one-tap",
     how: "Get a live NEAR Intents quote, then confirm the payment in your own wallet.",
     phase: 2,
+    href: "/swap",
   },
   {
     key: "take-profit",

@@ -94,3 +94,40 @@ export function getQuote(body: QuoteRequest): Promise<QuoteResponse> {
     body: JSON.stringify(body),
   });
 }
+
+// ---------- Swap status ----------
+
+export const SWAP_STATUSES = [
+  "PENDING_DEPOSIT",
+  "KNOWN_DEPOSIT_TX",
+  "INCOMPLETE_DEPOSIT",
+  "PROCESSING",
+  "SUCCESS",
+  "REFUNDED",
+  "FAILED",
+] as const;
+export type SwapStatus = (typeof SWAP_STATUSES)[number];
+
+const TxSchema = z.object({ hash: z.string(), explorerUrl: z.string().optional() });
+
+const StatusResponseSchema = z.object({
+  status: z.enum(SWAP_STATUSES),
+  updatedAt: z.string(),
+  swapDetails: z
+    .object({
+      depositedAmountFormatted: z.string().nullish(),
+      amountInFormatted: z.string().nullish(),
+      amountOutFormatted: z.string().nullish(),
+      refundedAmountFormatted: z.string().nullish(),
+      refundReason: z.string().nullish(),
+      originChainTxHashes: z.array(TxSchema).nullish(),
+      destinationChainTxHashes: z.array(TxSchema).nullish(),
+    })
+    .partial()
+    .nullish(),
+});
+export type StatusResponse = z.infer<typeof StatusResponseSchema>;
+
+export function getStatus(depositAddress: string): Promise<StatusResponse> {
+  return request(`/v0/status?depositAddress=${encodeURIComponent(depositAddress)}`, StatusResponseSchema);
+}

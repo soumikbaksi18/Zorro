@@ -31,9 +31,13 @@ const TABS = [
   },
 ];
 
+/** Reads the URL to highlight the current tab. Wrap in <Suspense> with <NavBar /> as fallback. */
 export function BottomNav() {
-  const pathname = usePathname();
+  return <NavBar pathname={usePathname()} />;
+}
 
+/** The nav itself. With no pathname (while the URL streams in) no tab is highlighted. */
+export function NavBar({ pathname }: { pathname?: string }) {
   return (
     <nav
       aria-label="Main"
@@ -41,7 +45,13 @@ export function BottomNav() {
     >
       <ul className="mx-auto flex max-w-md">
         {TABS.map((tab) => {
-          const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+          const active =
+            pathname !== undefined &&
+            (tab.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(tab.href) ||
+                (tab.href === "/orders" && pathname.startsWith("/swap/")) ||
+                (tab.href === "/trade" && pathname === "/swap"));
           return (
             <li key={tab.href} className="flex-1">
               <Link

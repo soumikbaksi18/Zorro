@@ -1,10 +1,12 @@
 "use client";
 
 import { useCurrency, useDeviceId } from "@/lib/client-prefs";
+import { deleteAllSwaps, useSwaps } from "@/lib/swap-store";
 
 export function SettingsPanel() {
   const [currency, setCurrency] = useCurrency();
   const deviceId = useDeviceId();
+  const swaps = useSwaps();
 
   return (
     <section className="divide-y divide-line rounded-2xl border border-line bg-surface">
@@ -25,6 +27,26 @@ export function SettingsPanel() {
             </button>
           ))}
         </div>
+      </div>
+      <div className="flex items-center justify-between gap-4 p-4">
+        <div>
+          <p className="font-medium">Swap history</p>
+          <p className="text-xs text-muted">
+            {swaps === null ? "…" : `${swaps.length} swap${swaps.length === 1 ? "" : "s"} stored on this phone`}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={!swaps?.length}
+          onClick={() => {
+            if (confirm("Delete all swap history from this phone? Swaps already in progress keep running on NEAR Intents.")) {
+              deleteAllSwaps();
+            }
+          }}
+          className="rounded-lg border border-down/40 px-3 py-1.5 text-xs font-medium text-down disabled:opacity-40"
+        >
+          Delete
+        </button>
       </div>
       <div className="p-4">
         <p className="font-medium">Device ID</p>

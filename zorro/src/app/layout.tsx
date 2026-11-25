@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { BottomNav } from "@/components/BottomNav";
+import { Suspense } from "react";
+import { BottomNav, NavBar } from "@/components/BottomNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(5rem+env(safe-area-inset-bottom))]">
           {children}
         </div>
-        <BottomNav />
+        <Suspense fallback={<NavBar />}>
+          <BottomNav />
+        </Suspense>
       </body>
     </html>
   );

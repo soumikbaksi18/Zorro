@@ -18,6 +18,10 @@ export const STABLECOINS = [
     chain: "base",
     chainName: "Base",
     decimals: 6,
+    // Used to build EIP-681 payment links
+    evmChainId: 8453,
+    tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    walletHint: "MetaMask, Coinbase Wallet or Rainbow",
   },
   {
     key: "usdc-sol",
@@ -26,10 +30,22 @@ export const STABLECOINS = [
     chain: "sol",
     chainName: "Solana",
     decimals: 6,
+    // Used to build Solana Pay links
+    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    walletHint: "Phantom, Solflare or Backpack",
   },
 ] as const;
 
-export type Asset = typeof ZEC | (typeof STABLECOINS)[number];
+export type Stablecoin = (typeof STABLECOINS)[number];
+export type StablecoinKey = Stablecoin["key"];
+export type Asset = typeof ZEC | Stablecoin;
+
+export function getStablecoin(key: string): Stablecoin | undefined {
+  return STABLECOINS.find((s) => s.key === key);
+}
+
+/** Smallest ZEC amount NEAR Intents accepts (from its "Amount is too low" error, 2026-11-25). */
+export const MIN_ZEC = "0.00132";
 
 /** Convert a human amount ("1.5") to base units ("150000000") without float errors. */
 export function toBaseUnits(amount: string, decimals: number): string {

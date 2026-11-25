@@ -27,10 +27,15 @@ export default function Home() {
           {ORDER_TYPES.map((t) => (
             <li key={t.key}>
               <Link
-                href={`/trade#${t.key}`}
-                className="flex h-full flex-col rounded-2xl border border-line bg-surface p-4 transition-colors hover:border-fox/60"
+                href={t.href ?? `/trade#${t.key}`}
+                className={`flex h-full flex-col rounded-2xl border bg-surface p-4 transition-colors hover:border-fox/60 ${
+                  t.href ? "border-fox/40" : "border-line"
+                }`}
               >
-                <span className="font-medium">{t.title}</span>
+                <span className="flex items-center justify-between gap-2 font-medium">
+                  {t.title}
+                  {!t.href && <span className="text-[10px] font-normal text-muted">Soon</span>}
+                </span>
                 <span className="mt-1 text-xs leading-relaxed text-muted">{t.example}</span>
               </Link>
             </li>
