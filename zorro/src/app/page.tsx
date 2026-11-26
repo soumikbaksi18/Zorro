@@ -8,8 +8,8 @@ type Tool = { href: string; label: string; note: string; icon: LucideIcon; soon?
 
 const TOOLS: Tool[] = [
   { href: "/swap", label: "Swap", note: "ZEC ⇄ USDC at today's price", icon: ArrowLeftRight },
-  { href: "/bots", label: "Bots", note: "Stop-loss, DCA, take-profit, grid", icon: Bot, soon: true },
-  { href: "/assistant", label: "AI assistant", note: "Describe a strategy in words", icon: Sparkles, soon: true },
+  { href: "/bots", label: "Bots", note: "Stop-loss, DCA, take-profit, grid", icon: Bot },
+  { href: "/assistant", label: "AI assistant", note: "Describe a strategy in words", icon: Sparkles },
   { href: "/settings", label: "Status & privacy", note: "Connections and what we store", icon: ShieldCheck },
 ];
 
@@ -54,13 +54,6 @@ function ToolLink({ tool }: { tool: Tool }) {
     </>
   );
   const cls = "panel flex items-center gap-3 p-4";
-  if (tool.soon && tool.href === "/assistant") {
-    return (
-      <span className={`${cls} cursor-default opacity-70`} aria-disabled="true">
-        {body}
-      </span>
-    );
-  }
   return (
     <Link href={tool.href} className={`${cls} transition-colors hover:border-fox/60 hover:bg-fox/5`}>
       {body}

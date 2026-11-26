@@ -58,7 +58,15 @@ Built for the Zcash India "Build on Zcash" bounty. See [PLAN.md](PLAN.md) for th
 - Every order is previewed first; prices stay within the policy's 1% bound (using the real market price); orders expiring after NEAR Intents' 7-day maximum are re-placed
 - Stopping a ladder or grid cancels its resting orders (unfilled amounts return to the wallet)
 
-Next: one small real deposit, live trade, live order and withdrawal; then Phase 8 (backtest + AI assistant).
+**Phase 8 (backtest + AI assistant): done**
+- Backtest any bot on real hourly ZEC prices (7, 30 or 90 days): chart with buy/sell markers, fees included, compared with just holding. On the new-bot form and in the assistant
+- AI assistant (`/assistant`): describe a strategy in plain English and get a validated bot (always drafted as paper), with the assumptions it made, an automatic 30-day backtest and Start paper / Start live buttons
+- Asks a question when it can't know something (e.g. "half my ZEC"), and refuses what bots can't do (leverage, shorting, other coins)
+- "Explain this with AI" turns any backtest into three plain sentences
+- Privacy: only the typed text, today's price and bot settings go to the AI service; addresses, balances, keys and tokens are blocked before sending. Rate-limited per user
+- Price history falls back from CoinGecko to Kraken when CoinGecko rate-limits
+
+Next: Phase 9 (polish, demo mode for judges, deployment, video, X post), plus one small real deposit, live trade, live order and withdrawal.
 
 ## Run locally
 

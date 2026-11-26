@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeftRight, ArrowUpRight, Fingerprint, SlidersHorizontal, Bot } from "lucide-react";
+import { ArrowLeftRight, ArrowUpRight, Fingerprint, SlidersHorizontal, Bot, Sparkles } from "lucide-react";
 import { BOT_TYPES } from "@/lib/order-types";
 import { WalletCard } from "@/components/bots/WalletCard";
 import { MyBots } from "@/components/bots/MyBots";
@@ -40,6 +40,15 @@ export default function BotsPage() {
       <WalletCard />
 
       <MyBots />
+
+      <Link href="/assistant" className="panel flex items-center gap-4 p-5 transition-colors hover:border-fox/60 hover:bg-fox/5">
+        <Sparkles size={20} strokeWidth={1.6} className="shrink-0 text-fox-light" aria-hidden="true" />
+        <span className="min-w-0">
+          <strong className="block text-sm font-medium">Describe a bot in words</strong>
+          <span className="text-xs text-muted">The AI assistant drafts the settings and shows what it would have done last month.</span>
+        </span>
+        <ArrowUpRight size={14} className="ml-auto shrink-0 text-dim" aria-hidden="true" />
+      </Link>
 
       <section aria-labelledby="how-heading" className="panel p-5">
         <h2 id="how-heading" className="eyebrow">

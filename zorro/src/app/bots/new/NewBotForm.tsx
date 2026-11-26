@@ -7,6 +7,7 @@ import { useAccount } from "@/lib/account-client";
 import { BotConfigSchema, MIN_LIMIT_ZEC, MIN_ZEC_TRADE, describeBot, gridPrices, ladderPrices, type BotKind } from "@/lib/bots/config";
 import { Segmented } from "@/components/ui";
 import { PasskeyGate } from "@/components/bots/PasskeyGate";
+import { BacktestPanel } from "@/components/bots/BacktestPanel";
 import Link from "next/link";
 
 const KINDS: { value: BotKind; label: string }[] = [
@@ -255,6 +256,8 @@ export function NewBotForm() {
                 : parsed.error.issues[0]?.message}
         </p>
       )}
+
+      {parsed.success && <BacktestPanel config={{ ...parsed.data, mode: "paper" }} />}
 
       {error && (
         <p role="alert" className="rounded-xl border border-down/40 bg-down/10 px-3 py-2.5 text-sm text-down">

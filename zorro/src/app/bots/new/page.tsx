@@ -12,7 +12,13 @@ export default function NewBotPage() {
           ← Bots
         </Link>
         <h1 className="page-title mt-3">New bot</h1>
-        <p className="page-lead">Try it on paper first: real quotes, no money moved.</p>
+        <p className="page-lead">
+          Try it on paper first: real quotes, no money moved. Or{" "}
+          <Link href="/assistant" className="text-fox-light">
+            describe it in words
+          </Link>
+          .
+        </p>
       </header>
       <NewBotForm />
     </div>
