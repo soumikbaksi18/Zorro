@@ -145,7 +145,7 @@ The UI shows this in plain words before the user signs: "Zorro can trade up to $
 | ✅ 4. Agent wallet | Passkey sign-up/sign-in → limits screen → agent_create + grant (one signature) → wallet screen | Done: verified end to end on mainnet (agent ACTIVE, owned by a passkey, grant accepted by a dry-run quote) |
 | ✅ 5. Fund and withdraw | Deposit addresses (ZEC, USDC Base/Solana) with QR / wallet links, live balances + budget usage, withdrawal preview and send to signed addresses, activity | Built and verified against the live API with no funds (real deposit address, preview refusal). **Pending: one small real deposit + withdrawal** |
 | ✅ 6. Bot engine + first bots | Worker (`npm run worker`), stop-loss, trailing stop, Smart DCA, paper/live modes, activity log, demo mode | Verified: paper stop-loss fired in demo mode with a real quote; live bot on an empty wallet paused safely without sending. **Pending: one small real live trade** |
-| **7. Limit-order bots** | Take-profit ladder, grid | Ladder and grid place, fill/cancel and re-arm correctly |
+| ✅ 7. Limit-order bots | Take-profit ladder, grid (NEAR Intents resting limit orders): plan, preview, place one per tick, follow fills, re-arm the grid, re-place after 7-day expiry, cancel on stop | Verified in paper mode with demo prices: ladder rungs fill in turn and complete; grid buy fill → counter sell → round trip with profit booked; live safety pause tested on an empty wallet. **Pending: one small real live order** |
 | **8. Backtest + AI** | Backtester; "describe your strategy"; explanations | Plain-English request → valid bot → backtest → launch |
 | **9. Polish and submit** | Demo mode, error states, privacy copy, README, video, X post | Clean demo on a real phone |
 

@@ -23,14 +23,17 @@ import {
 import { decryptSecret, newIdempotencyKey } from "../crypto";
 import { BotConfigSchema, type BotConfig, type BotState } from "./config";
 import { evaluate, nextDcaRun, type Decision } from "./engine";
+import { processLimitBot } from "./limit-runner";
 
 const DEMO_PRICE_KEY = "demo_price";
 const HEARTBEAT_KEY = "worker_heartbeat";
 const MAX_FAILURES = 3;
 // Quote warnings that are notes, not refusals.
-const NON_BLOCKING_WARNINGS = new Set(["high_fee", "asset_delivered_as_is"]);
+export const NON_BLOCKING_WARNINGS = new Set(["high_fee", "asset_delivered_as_is"]);
 
-type BotRow = typeof schema.bots.$inferSelect;
+export type BotRow = typeof schema.bots.$inferSelect;
+// Bots that trade with market swaps (ladders and grids use limit orders instead).
+type MarketBotConfig = Exclude<BotConfig, { kind: "tp_ladder" | "grid" }>;
 type Log = (msg: string) => void;
 
 // ---------- Price (with demo override) ----------
@@ -108,6 +111,11 @@ async function processBot(bot: BotRow, price: { priceUsd: number; source: string
   const config = BotConfigSchema.parse(bot.config);
   const state = (bot.state ?? {}) as BotState;
 
+  // Take-profit ladders and grids work with resting limit orders, not market swaps.
+  if (config.kind === "tp_ladder" || config.kind === "grid") {
+    return processLimitBot(bot, config, state, price, now, busyAgents);
+  }
+
   if (state.inFlight) {
     busyAgents.add(bot.agentId);
     return settleInFlight(bot, config, state);
@@ -135,7 +143,7 @@ async function processBot(bot: BotRow, price: { priceUsd: number; source: string
 
 // ---------- Execute a decision ----------
 
-function swapFor(config: BotConfig, decision: Exclude<Decision, { type: "hold" }>): { body: SwapBody; outDecimals: number } {
+function swapFor(config: MarketBotConfig, decision: Exclude<Decision, { type: "hold" }>): { body: SwapBody; outDecimals: number } {
   if (decision.type === "sell_zec") {
     const stable = STABLECOINS.find((s) => s.key === (config as { sellTo: string }).sellTo)!;
     return {
@@ -152,7 +160,7 @@ function swapFor(config: BotConfig, decision: Exclude<Decision, { type: "hold" }
 
 async function execute(
   bot: BotRow,
-  config: BotConfig,
+  config: MarketBotConfig,
   state: BotState,
   decision: Exclude<Decision, { type: "hold" }>,
   price: { priceUsd: number; source: string },
@@ -232,7 +240,7 @@ async function sendSwap(bot: BotRow, swapBody: SwapBody, idempotencyKey: string,
 
 // ---------- Settle a live trade ----------
 
-async function settleInFlight(bot: BotRow, config: BotConfig, state: BotState): Promise<string | null> {
+async function settleInFlight(bot: BotRow, config: MarketBotConfig, state: BotState): Promise<string | null> {
   const inFlight = state.inFlight!;
   const [row] = await db.select().from(schema.operations).where(eq(schema.operations.idempotencyKey, inFlight.idempotencyKey)).limit(1);
   if (!row) {
@@ -290,7 +298,7 @@ async function settleInFlight(bot: BotRow, config: BotConfig, state: BotState): 
 }
 
 /** Update a bot's memory after a fill (simulated for paper, settled for live). */
-function applyFill(config: BotConfig, state: BotState, decision: Exclude<Decision, { type: "hold" }>, amountIn: string, amountOut: string, now: Date, settled = false): BotState {
+function applyFill(config: MarketBotConfig, state: BotState, decision: Exclude<Decision, { type: "hold" }>, amountIn: string, amountOut: string, now: Date, settled = false): BotState {
   if (decision.type === "sell_zec") {
     return {
       ...state,
@@ -314,7 +322,7 @@ function applyFill(config: BotConfig, state: BotState, decision: Exclude<Decisio
 
 // ---------- Helpers ----------
 
-async function agentHasOpenTrade(agentId: string): Promise<boolean> {
+export async function agentHasOpenTrade(agentId: string): Promise<boolean> {
   const [open] = await db
     .select({ k: schema.operations.idempotencyKey })
     .from(schema.operations)
@@ -329,18 +337,18 @@ async function agentHasOpenTrade(agentId: string): Promise<boolean> {
   return Boolean(open);
 }
 
-async function grantTokenFor(agentId: string): Promise<string> {
+export async function grantTokenFor(agentId: string): Promise<string> {
   const [grant] = await db.select().from(schema.grants).where(eq(schema.grants.agentId, agentId)).orderBy(desc(schema.grants.createdAt)).limit(1);
   if (!grant || grant.revokedAt || grant.expiresAt < new Date()) throw new Error("No valid bot permission for this wallet");
   return decryptSecret(grant.tokenCiphertext, agentId);
 }
 
-async function botById(id: string) {
+export async function botById(id: string) {
   const [bot] = await db.select().from(schema.bots).where(eq(schema.bots.id, id)).limit(1);
   return bot ?? null;
 }
 
-async function saveBot(id: string, state: BotState, status?: BotRow["status"]): Promise<void> {
+export async function saveBot(id: string, state: BotState, status?: BotRow["status"]): Promise<void> {
   await db
     .update(schema.bots)
     .set({ state: state as Record<string, unknown>, ...(status ? { status } : {}) })
@@ -357,6 +365,6 @@ export async function addEvent(
   await db.insert(schema.botEvents).values({ botId, level, message, data, correlationId });
 }
 
-function oneLine(text: string): string {
+export function oneLine(text: string): string {
   return text.replace(/\s+/g, " ").slice(0, 480);
 }

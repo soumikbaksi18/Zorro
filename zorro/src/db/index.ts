@@ -1,5 +1,5 @@
 // Database connection. Server-side only.
-// Local: a SQLite file (DATABASE_URL=file:./data/zorro.db, the default).
+// Local: a SQLite file (default ~/.zorro/zorro.db, see url.ts).
 // Deployed: any libsql URL (e.g. a Turso database) plus DATABASE_AUTH_TOKEN.
 
 import { mkdirSync } from "node:fs";
@@ -7,8 +7,9 @@ import { dirname } from "node:path";
 import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
+import { DATABASE_URL } from "./url";
 
-const url = process.env.DATABASE_URL ?? "file:./data/zorro.db";
+const url = DATABASE_URL;
 
 function makeClient(): Client {
   if (url.startsWith("file:")) {

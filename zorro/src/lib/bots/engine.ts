@@ -65,6 +65,11 @@ export function evaluate(config: BotConfig, state: BotState, priceUsd: number, n
       }
       return { decision: { type: "buy_zec", amountUsd, reason }, state: next };
     }
+
+    // Limit-order bots are planned by limit-planner.ts, not by market-order decisions.
+    case "tp_ladder":
+    case "grid":
+      return { decision: { type: "hold" }, state: next };
   }
 }
 

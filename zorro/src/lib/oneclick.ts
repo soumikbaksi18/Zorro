@@ -25,11 +25,13 @@ async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: { "content-type": "application/json", ...authHeaders(), ...init?.headers },
+    signal: init?.signal ?? AbortSignal.timeout(30_000),
   });
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     throw new OneClickError(`1Click ${path} failed with ${res.status}`, res.status, body);
   }
+  if (body === null) throw new OneClickError(`1Click ${path} returned an unreadable response`, res.status, null);
   return schema.parse(body);
 }
 

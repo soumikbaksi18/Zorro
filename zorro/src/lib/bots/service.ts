@@ -9,6 +9,7 @@ import type { CurrentUser } from "../session";
 import { BOT_LABEL, BotConfigSchema, describeBot, type BotConfig, type BotState } from "./config";
 import { distanceToTrigger } from "./engine";
 import { addEvent, getDemoPrice, workerHeartbeat, zecPrice } from "./runner";
+import { cancelBotOrders } from "./limit-runner";
 
 const MAX_BOTS_PER_WALLET = 10;
 
@@ -109,13 +110,30 @@ export async function updateBot(user: CurrentUser, id: string, action: z.infer<t
   if (row.status === "stopped") throw new AgentError("This bot has finished. Create a new one.", 409);
   if (action === "resume" && state.completedAt) throw new AgentError("This bot has finished.", 409);
 
+  const config = BotConfigSchema.parse(row.config);
+  const limitBot = config.kind === "tp_ladder" || config.kind === "grid";
+  let nextState: BotState = action === "resume" ? { ...state, lastError: undefined, failures: 0 } : state;
+  let note = "";
+
+  if (action === "stop" && limitBot) {
+    // Stopping a ladder or grid cancels its resting orders; unfilled amounts return to the wallet.
+    const { state: cancelled, failed } = await cancelBotOrders(row, state, config.mode);
+    nextState = cancelled;
+    if (failed.length) {
+      await db.update(schema.bots).set({ state: nextState as Record<string, unknown> }).where(eq(schema.bots.id, id));
+      throw new AgentError(`Some orders couldn't be cancelled yet, so the bot keeps running: ${failed.join("; ")}`, 409);
+    }
+    note = " Resting orders were cancelled; unfilled amounts return to your wallet.";
+  } else if (action === "pause" && limitBot) {
+    note = " Orders already resting stay on the book until you stop the bot.";
+  } else if (action === "stop" && state.inFlight) {
+    // Stopping never cancels a trade already on its way; the worker still records how it settles.
+    note = " A trade already sent will still settle.";
+  }
+
   const status = action === "pause" ? "paused" : action === "resume" ? "active" : "stopped";
-  // Stopping never cancels a trade already on its way; the worker still records how it settles.
-  await db
-    .update(schema.bots)
-    .set({ status, state: (action === "resume" ? { ...state, lastError: undefined, failures: 0 } : state) as Record<string, unknown> })
-    .where(eq(schema.bots.id, id));
+  await db.update(schema.bots).set({ status, state: nextState as Record<string, unknown> }).where(eq(schema.bots.id, id));
   const verb = { pause: "Paused", resume: "Resumed", stop: "Stopped" }[action];
-  await addEvent(id, "info", `${verb} by you.${action === "stop" && state.inFlight ? " A trade already sent will still settle." : ""}`);
+  await addEvent(id, "info", `${verb} by you.${note}`);
   return view((await ownedBot(user, id)).row);
 }

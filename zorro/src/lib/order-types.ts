@@ -11,7 +11,7 @@ export type BotType = {
   icon: LucideIcon;
   phase: number; // build phase in PLAN.md §8
   /** Bot kinds this card can create today (anchor on /bots/new). */
-  create?: "stop_loss" | "smart_dca";
+  create?: "stop_loss" | "smart_dca" | "tp_ladder" | "grid";
 };
 
 export const BOT_TYPES: BotType[] = [
@@ -40,6 +40,7 @@ export const BOT_TYPES: BotType[] = [
     how: "Places resting NEAR Intents limit orders that fill on their own as the price climbs.",
     icon: ChartNoAxesCombined,
     phase: 7,
+    create: "tp_ladder",
   },
   {
     key: "grid",
@@ -48,5 +49,6 @@ export const BOT_TYPES: BotType[] = [
     how: "A ladder of buy and sell orders that re-arms after every fill, so you profit from price swings.",
     icon: Grid3x3,
     phase: 7,
+    create: "grid",
   },
 ];

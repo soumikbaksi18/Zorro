@@ -7,6 +7,14 @@ import { api } from "@/lib/api-client";
 import type { BotDetail as Detail } from "@/lib/bots/service";
 import { BOT_STATUS_TONE } from "@/components/bots/MyBots";
 
+const ORDER_TONE: Record<string, string> = {
+  open: "bg-fox/20 text-fox-light",
+  partially_filled: "bg-gold/15 text-gold",
+  filled: "bg-up/15 text-up",
+  placing: "bg-gold/15 text-gold",
+  failed: "bg-down/15 text-down",
+};
+
 const LEVEL_TONE: Record<string, string> = {
   trade: "border-fox/50 bg-fox/10",
   error: "border-down/40 bg-down/10",
@@ -108,6 +116,36 @@ export function BotDetail({ id }: { id: string }) {
               <Row label="Next buy" value={new Date(s.nextRunAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} />
             )}
           </dl>
+        )}
+        {(bot.kind === "tp_ladder" || bot.kind === "grid") && s.orders && (
+          <div className="mt-4">
+            {bot.kind === "grid" && (
+              <dl className="tabular mb-3 text-sm">
+                <Row label="Round trips" value={String(s.roundTrips ?? 0)} />
+                <Row label="Profit booked (before fees)" value={`$${(s.realizedUsd ?? 0).toFixed(2)}`} />
+              </dl>
+            )}
+            <p className="eyebrow mb-2">Orders</p>
+            <ul className="divide-y divide-line rounded-xl border border-line bg-ink/50">
+              {[...s.orders]
+                .filter((o) => o.status !== "canceled" || bot.status === "stopped")
+                .sort((a, b) => b.priceUsd - a.priceUsd)
+                .map((o) => (
+                  <li key={o.key} className="tabular flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                    <span>
+                      <span className={o.side === "sell" ? "text-up" : "text-fox-light"}>{o.side === "sell" ? "Sell" : "Buy"}</span>{" "}
+                      {Number(o.quantity) / 1e8} ZEC
+                    </span>
+                    <span className="text-right">
+                      ${o.priceUsd.toFixed(2)}
+                      <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] ${ORDER_TONE[o.status] ?? "bg-surface-2 text-muted"}`}>
+                        {o.status.replace("_", " ")}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </div>
         )}
         {s.completedAt && (
           <p className="mt-4 text-sm text-up">

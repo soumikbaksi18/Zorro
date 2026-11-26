@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { useAccount } from "@/lib/account-client";
-import { BotConfigSchema, MIN_ZEC_TRADE, describeBot, type BotKind } from "@/lib/bots/config";
+import { BotConfigSchema, MIN_LIMIT_ZEC, MIN_ZEC_TRADE, describeBot, gridPrices, ladderPrices, type BotKind } from "@/lib/bots/config";
 import { Segmented } from "@/components/ui";
 import { PasskeyGate } from "@/components/bots/PasskeyGate";
 import Link from "next/link";
@@ -13,6 +13,8 @@ const KINDS: { value: BotKind; label: string }[] = [
   { value: "stop_loss", label: "Stop-loss" },
   { value: "trailing_stop", label: "Trailing" },
   { value: "smart_dca", label: "Smart DCA" },
+  { value: "tp_ladder", label: "Take-profit" },
+  { value: "grid", label: "Grid" },
 ];
 const STABLES = [
   { value: "usdc-base" as const, label: "USDC · Base" },
@@ -46,6 +48,16 @@ export function NewBotForm() {
   const [every, setEvery] = useState("168");
   const [dipBoost, setDipBoost] = useState("50");
   const [maxBuys, setMaxBuys] = useState("");
+  // Take-profit ladder
+  const [ladderZec, setLadderZec] = useState("0.01");
+  const [firstPrice, setFirstPrice] = useState("");
+  const [stepPct, setStepPct] = useState("10");
+  const [rungs, setRungs] = useState("4");
+  // Grid
+  const [lower, setLower] = useState("");
+  const [upper, setUpper] = useState("");
+  const [levels, setLevels] = useState("5");
+  const [gridZec, setGridZec] = useState("0.002");
   const [price, setPrice] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,16 +89,20 @@ export function NewBotForm() {
       ? { ...base, kind, amountZec, triggerPriceUsd: Number(trigger), sellTo: stable }
       : kind === "trailing_stop"
         ? { ...base, kind, amountZec, trailPct: Number(trailPct), sellTo: stable }
-        : {
-            ...base,
-            kind,
-            buyUsd: Number(buyUsd),
-            everyHours: Number(every),
-            payWith: stable,
-            dipBoostPct: Number(dipBoost),
-            dipThresholdPct: 10,
-            maxBuys: maxBuys ? Number(maxBuys) : null,
-          };
+        : kind === "smart_dca"
+          ? {
+              ...base,
+              kind,
+              buyUsd: Number(buyUsd),
+              everyHours: Number(every),
+              payWith: stable,
+              dipBoostPct: Number(dipBoost),
+              dipThresholdPct: 10,
+              maxBuys: maxBuys ? Number(maxBuys) : null,
+            }
+          : kind === "tp_ladder"
+            ? { kind, mode, amountZec: ladderZec, firstPriceUsd: Number(firstPrice), stepPct: Number(stepPct), rungs: Number(rungs), receive: stable }
+            : { kind, mode, lowerUsd: Number(lower), upperUsd: Number(upper), levels: Number(levels), orderZec: gridZec, quote: stable };
   const parsed = BotConfigSchema.safeParse(raw);
   const triggerAbove = kind === "stop_loss" && price !== null && Number(trigger) >= price;
 
@@ -106,7 +122,21 @@ export function NewBotForm() {
   return (
     <div className="flex flex-col gap-5">
       <Field label="Strategy">
-        <Segmented label="Strategy" value={kind} onChange={(k) => setKindInput(k)} options={KINDS} />
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label="Strategy">
+          {KINDS.map((k) => (
+            <button
+              key={k.value}
+              type="button"
+              onClick={() => setKindInput(k.value)}
+              aria-pressed={kind === k.value}
+              className={`min-h-10 rounded-full border text-[13px] font-medium transition-colors ${
+                kind === k.value ? "border-fox bg-fox text-snow" : "border-line bg-panel text-muted hover:text-snow"
+              }`}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
       </Field>
 
       <Field label="Mode">
@@ -132,7 +162,37 @@ export function NewBotForm() {
         </p>
       )}
 
-      {kind !== "smart_dca" ? (
+      {kind === "tp_ladder" ? (
+        <>
+          <Input label="ZEC to sell in total" value={ladderZec} onChange={setLadderZec} suffix="ZEC" hint={`At least ${MIN_LIMIT_ZEC} ZEC per rung`} />
+          <Input
+            label="First rung price"
+            value={firstPrice}
+            onChange={setFirstPrice}
+            prefix="$"
+            hint={price ? `e.g. ${(price * 1.1).toFixed(0)} (10% above now). Rungs below today's price sell straight away.` : undefined}
+          />
+          <Input label="Each rung higher by" value={stepPct} onChange={setStepPct} suffix="%" />
+          <Input label="Rungs" value={rungs} onChange={setRungs} suffix="of 1–6" />
+          <Field label="Receive">
+            <Segmented label="Receive" value={stable} onChange={setStable} options={STABLES} />
+          </Field>
+        </>
+      ) : kind === "grid" ? (
+        <>
+          <Input label="Range from" value={lower} onChange={setLower} prefix="$" hint={price ? `e.g. ${(price * 0.9).toFixed(0)}` : undefined} />
+          <Input label="Range to" value={upper} onChange={setUpper} prefix="$" hint={price ? `e.g. ${(price * 1.1).toFixed(0)}` : undefined} />
+          <Input label="Levels" value={levels} onChange={setLevels} suffix="of 3–10" />
+          <Input label="ZEC per level" value={gridZec} onChange={setGridZec} suffix="ZEC" hint={`At least ${MIN_LIMIT_ZEC} ZEC`} />
+          <Field label="Trade against">
+            <Segmented label="Trade against" value={stable} onChange={setStable} options={STABLES} />
+          </Field>
+          <p className="rounded-xl border border-line bg-panel px-3 py-2.5 text-xs leading-relaxed text-muted">
+            A grid needs both ZEC (for the sells above the price) and USDC (for the buys below). Each order placed counts
+            towards your daily budget.
+          </p>
+        </>
+      ) : kind !== "smart_dca" ? (
         <>
           <Input label="ZEC to sell" value={amountZec} onChange={setAmountZec} suffix="ZEC" hint={`Minimum ${MIN_ZEC_TRADE} ZEC`} />
           {kind === "stop_loss" ? (
@@ -169,11 +229,30 @@ export function NewBotForm() {
         <section className="panel-hero p-4">
           <p className="eyebrow">This bot will</p>
           <p className="mt-2 text-sm leading-relaxed">{describeBot(parsed.data)}.</p>
-          <p className="mt-2 text-xs text-muted">Up to 1% price slippage. Live trades also stay within your daily budget.</p>
+          {parsed.data.kind === "tp_ladder" && (
+            <p className="tabular mt-2 text-xs text-muted">Rungs: {ladderPrices(parsed.data).map((p) => `$${p}`).join(" · ")}</p>
+          )}
+          {parsed.data.kind === "grid" && (
+            <p className="tabular mt-2 text-xs text-muted">
+              Levels: {gridPrices(parsed.data).map((p) => `$${p}`).join(" · ")}. Each buy→sell round trip earns about $
+              {(((parsed.data.upperUsd - parsed.data.lowerUsd) / (parsed.data.levels - 1)) * Number(parsed.data.orderZec)).toFixed(2)} before fees (~0.2% per order).
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted">
+            {parsed.data.kind === "tp_ladder" || parsed.data.kind === "grid"
+              ? "Uses NEAR Intents limit orders: they rest until the price is reached, for up to 7 days at a time (Zorro re-places them)."
+              : "Up to 1% price slippage. Live trades also stay within your daily budget."}
+          </p>
         </section>
       ) : (
         <p className="text-xs text-muted">
-          {kind === "stop_loss" && !trigger ? "Enter the ZEC price that should trigger the sale." : parsed.error.issues[0]?.message}
+          {kind === "stop_loss" && !trigger
+            ? "Enter the ZEC price that should trigger the sale."
+            : kind === "tp_ladder" && !firstPrice
+              ? "Enter the price of the first rung."
+              : kind === "grid" && (!lower || !upper)
+                ? "Enter the price range for the grid."
+                : parsed.error.issues[0]?.message}
         </p>
       )}
 

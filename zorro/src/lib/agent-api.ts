@@ -69,6 +69,10 @@ async function call<T>(path: string, schema: z.ZodType<T>, opts: CallOptions = {
       retryAfter ? Number(retryAfter) : null,
     );
   }
+  if (json === null) {
+    // e.g. a proxy or network hiccup returned HTML or an empty body
+    throw new AgentApiError(`Agent API ${path} returned an unreadable response`, res.status, "unreadable_response", null, null, null);
+  }
   return schema.parse(json);
 }
 
@@ -283,6 +287,25 @@ export type LimitOrderBody = {
 
 export const placeLimitOrder = (agentId: string, body: LimitOrderBody, g: GrantCall) =>
   call(`/v1/agents/${encodeURIComponent(agentId)}/limit-orders`, OperationSchema, { body, ...g });
+
+/** Limit-order preview: needs only the partner key; places nothing. */
+export const previewLimitOrder = (agentId: string, body: LimitOrderBody) =>
+  call(`/v1/agents/${encodeURIComponent(agentId)}/limit-orders`, DryRunSchema, { body: { ...body, dry: true } });
+
+const LimitOrderSchema = z
+  .object({
+    order_id: z.string(),
+    // open, partially_filled, filled, canceled, expired, awaiting_deposit, or another 1Click state
+    fill_status: z.string(),
+    is_payout_status_final: z.boolean().nullish(),
+    deadline: z.string().nullish(),
+  })
+  .loose();
+export type LimitOrder = z.infer<typeof LimitOrderSchema>;
+
+/** Read a resting order live from 1Click. A read: no grant, no quota. */
+export const getLimitOrder = (agentId: string, orderId: string) =>
+  call(`/v1/agents/${encodeURIComponent(agentId)}/limit-orders/${encodeURIComponent(orderId)}`, LimitOrderSchema);
 
 export const cancelLimitOrder = (agentId: string, orderId: string, grantToken: string) =>
   call(

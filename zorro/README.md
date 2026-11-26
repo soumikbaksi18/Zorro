@@ -52,7 +52,13 @@ Built for the Zcash India "Build on Zcash" bounty. See [PLAN.md](PLAN.md) for th
 - Bot pages with live trigger distance, DCA stats, pause/resume/stop and an activity log
 - Demo mode (`ZORRO_DEMO_MODE=1`, development only): set a fake price in Settings to show a bot triggering
 
-Next: one small real deposit, live trade and withdrawal; then Phase 7 (take-profit ladder, grid).
+**Phase 7 (limit-order bots): built, real live-order test pending**
+- Take-profit ladder: sell in up to 6 rungs at rising prices, each a resting NEAR Intents limit order
+- Grid: buys below and sells above the price across 3–10 levels; every fill places the opposite order one level away and books the round-trip profit
+- Every order is previewed first; prices stay within the policy's 1% bound (using the real market price); orders expiring after NEAR Intents' 7-day maximum are re-placed
+- Stopping a ladder or grid cancels its resting orders (unfilled amounts return to the wallet)
+
+Next: one small real deposit, live trade, live order and withdrawal; then Phase 8 (backtest + AI assistant).
 
 ## Run locally
 
@@ -61,7 +67,7 @@ Requires Node 22+.
 ```bash
 cp .env.example .env.local   # fill in the keys (see comments in the file)
 npm install
-npm run db:migrate           # creates data/zorro.db
+npm run db:migrate           # creates ~/.zorro/zorro.db (outside the project, see src/db/url.ts)
 npm run dev                  # http://localhost:3000
 npm run worker               # in a second terminal: runs the bots
 ```
