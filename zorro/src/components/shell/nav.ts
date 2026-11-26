@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Bot, House, ListChecks, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, Bot, House, ListChecks, Newspaper, type LucideIcon } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -6,6 +6,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/", label: "Home", icon: House },
   { href: "/swap", label: "Swap", icon: ArrowLeftRight },
   { href: "/bots", label: "Bots", icon: Bot },
+  { href: "/news", label: "News", icon: Newspaper },
   { href: "/orders", label: "Orders", icon: ListChecks },
 ];
 

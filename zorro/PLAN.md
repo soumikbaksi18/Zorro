@@ -1,6 +1,8 @@
 # Zorro Bots: Plan
 
-**Zorro is a phone-first app of private, automatic trading bots for ZEC.** Users pick a strategy (DCA, stop-loss, take-profit ladder, grid), or describe one in plain words to the AI assistant. A bot runs it 24/7 from the user's own NEAR Intents agent wallet, within spending limits they sign once with Face ID or a fingerprint. Zorro can trade within those limits but can never send funds anywhere except the user's own addresses.
+**Zorro is a phone-first private wallet and trading app where ZEC is home.** Hold ZEC and anything you swap it into in one wallet (no other wallet apps needed), and run bots or AI trade ideas that always return to ZEC. Version 1 (below) is the bot engine; version 2 is in [§11](#11-version-2-zorro-wallet--ai-trade-ideas).
+
+**Version 1: private, automatic trading bots for ZEC.** Users pick a strategy (DCA, stop-loss, take-profit ladder, grid), or describe one in plain words to the AI assistant. A bot runs it 24/7 from the user's own NEAR Intents agent wallet, within spending limits they sign once with Face ID or a fingerprint. Zorro can trade within those limits but can never send funds anywhere except the user's own addresses.
 
 Built for the Zcash India "Build on Zcash" bounty (Nov 2026).
 
@@ -147,7 +149,11 @@ The UI shows this in plain words before the user signs: "Zorro can trade up to $
 | ✅ 6. Bot engine + first bots | Worker (`npm run worker`), stop-loss, trailing stop, Smart DCA, paper/live modes, activity log, demo mode | Verified: paper stop-loss fired in demo mode with a real quote; live bot on an empty wallet paused safely without sending. **Pending: one small real live trade** |
 | ✅ 7. Limit-order bots | Take-profit ladder, grid (NEAR Intents resting limit orders): plan, preview, place one per tick, follow fills, re-arm the grid, re-place after 7-day expiry, cancel on stop | Verified in paper mode with demo prices: ladder rungs fill in turn and complete; grid buy fill → counter sell → round trip with profit booked; live safety pause tested on an empty wallet. **Pending: one small real live order** |
 | ✅ 8. Backtest + AI | Backtester for all 5 bots on real hourly ZEC prices (7/30/90 days, fees included, vs holding); AI assistant (`/assistant`): words → validated paper bot → auto backtest → start paper or live; "Explain this with AI" on any backtest | Verified end to end on the dev server: 5 requests (stop-loss, DCA, ladder → valid bots; "half my ZEC" → asks how much; leverage → unsupported), 30-day backtest on 720 real prices, AI explanation, paper bot started |
-| **9. Polish and submit** | Demo mode, error states, privacy copy, README, video, X post | Clean demo on a real phone |
+| **9. Multi-asset wallet** | See [§11](#11-version-2-zorro-wallet--ai-trade-ideas): wallet home, assets list, receive any asset, in-wallet swap, unified activity, one-Face-ID wallet upgrade | Swap ZEC → SOL inside Zorro with no address typed; SOL shows on Home |
+| **10. Send** | Address book; adding an address = one Face ID; send any asset to any chain | Send to a new address end to end (preview on mainnet, real send with go-ahead) |
+| **11. Position bots** | Any asset, opened from ZEC: entry + take-profit + stop-loss (one cancels the other), P/L in ZEC and USD; existing bots work on any pair | Paper position on SOL/ZEC hits TP in demo mode and the SL order is cancelled |
+| **12. AI trade ideas** | Signal scanner → ranked ideas with plain-words reasoning, suggested TP/SL and the signal's past track record → one tap opens a position bot | Idea list loads in under 5 s; tapping one creates a valid paper position bot |
+| **13. Polish and submit** | Demo mode, error states, privacy copy, README, video, X post | Clean demo on a real phone |
 
 **Demo mode:** a hidden switch that feeds a scripted price path to the bot engine, so judges see a stop-loss and a grid fire live.
 
@@ -176,7 +182,54 @@ The UI shows this in plain words before the user signs: "Zorro can trade up to $
 
 ---
 
-## 11. Bounty submission checklist
+## 11. Version 2: Zorro Wallet + AI trade ideas
+
+**The problem:** in ZEC wallets like Vizor you can swap ZEC to another asset through NEAR Intents, but you must paste an address from *another* wallet app to receive it. ZEC users end up juggling several wallets.
+
+**The idea:** ZEC is your home base. Zorro is one private wallet that holds ZEC **and** whatever you swap it into. Swaps land back in Zorro: no address to paste. Bots and AI trade ideas use the same wallet, and every position opens from ZEC and closes back into ZEC, so success is measured as "did I end up with more ZEC?"
+
+### How (verified in the Agent API docs, 26 Nov 2026)
+- The bot wallet Zorro already creates is **one NEAR Intents account with a confidential (private) balance** that can hold any of the ~230 listed tokens. Swaps settle inside it. It becomes *the* Zorro wallet, not only the bots' wallet.
+- **Receive:** one-time deposit addresses on any listed chain credit that balance.
+- **Send:** withdraw any asset to any listed chain. Destinations are on an allow-list in the signed policy, so adding a new address takes one Face ID (`policy_update`, a single passkey signature). Zorro can never send anywhere you didn't approve.
+- **Limit orders work on any pair**, priced in ZEC if we want (e.g. sell SOL at 0.25 ZEC), so TP/SL work on any asset.
+- Existing wallets are upgraded with one Face ID (`policy_update`: more assets, same budget and safety rules).
+
+### Screens (layout inspired by Vizor-style ZEC wallets, Zorro branding)
+| Screen | Contents |
+|---|---|
+| Home | Balance card (ZEC big, USD value, 24h change, hide toggle), **Send / Receive / Swap** buttons, asset list (ZEC first, then holdings with value and change), recent activity |
+| Swap | You pay / You receive, asset picker (curated list), quote with fees, slippage setting. Lands in the wallet: no recipient address. "Send to another wallet instead" stays as an option (today's 1Click flow) |
+| Trade | AI trade ideas, my positions and bots, "describe a bot in words" |
+| Activity | Everything in one list, grouped by month: deposits, swaps, sends, bot trades, limit orders |
+| Settings | Wallet limits (with upgrade), address book, privacy, status |
+
+Tab bar: **Home · Swap · Trade · Activity**, with Settings in the header.
+
+**Curated assets (first version):** ZEC, BTC, ETH, SOL, NEAR, USDC, USDT, plus a few more liquid ones if their prices are fresh. Curated rather than all 230, to avoid scam/illiquid tokens and stale prices (limit orders are refused when a price is over 10 minutes old).
+
+### Position bots
+- **Open:** swap ZEC → asset now (or a resting limit buy at a price).
+- **Take-profit:** resting limit sell back to ZEC. **Stop-loss:** watched by the worker, sells back to ZEC at market. Optional trailing stop.
+- When one side fires, the other is cancelled. P/L shown in **ZEC and USD**. Paper first, like every Zorro bot.
+- Existing bots (DCA, ladder, grid, stops) are generalised from ZEC/USDC to any (asset, quote) pair.
+
+### AI trade ideas ("Scout")
+Honest framing: **ideas with evidence, not predictions.** Nobody can reliably predict prices, and the app never says "guaranteed" or "best profit".
+1. **Signals (plain code, not AI):** for each curated asset vs ZEC, from hourly history: trend (20/50 moving averages), 7-day momentum, RSI, volatility, distance from 30-day high/low, strength vs ZEC.
+2. **Ranking:** a fixed score ranks the setups (e.g. "SOL is in an uptrend vs ZEC and pulled back 6%").
+3. **Track record:** the same rule is backtested over the last 90 days: how often it hit TP before SL, average result, fees included. Shown next to every idea.
+4. **AI writes the explanation** and suggests TP/SL from volatility (e.g. SL ≈ 1.5× typical move, TP ≈ 2–3×). Output is validated like the assistant's.
+5. **One tap → position bot** (paper by default; live needs confirmation and stays within the signed budget).
+
+### Honest limits (say these in the app and the pitch)
+- ZEC held in Zorro sits in the **private NEAR Intents balance, not Zcash's shielded pool**. ZEC arrives and leaves through transparent `t1` addresses. A truly shielded in-app ZEC wallet would need a Zcash light client running in the browser: a much bigger project. Suggested wording: "Keep long-term savings shielded in your Zcash wallet; use Zorro to trade."
+- Funds are held by the NEAR Intents agent wallet provider under the policy you sign (experimental beta: small amounts only).
+- Ideas can lose money. Paper mode and the track record are there so users can judge them.
+
+---
+
+## 12. Bounty submission checklist
 
 - [ ] Public GitHub repo with a clear README
 - [ ] Deployed app URL that installs on a phone

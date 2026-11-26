@@ -66,6 +66,12 @@ Built for the Zcash India "Build on Zcash" bounty. See [PLAN.md](PLAN.md) for th
 - Privacy: only the typed text, today's price and bot settings go to the AI service; addresses, balances, keys and tokens are blocked before sending. Rate-limited per user
 - Price history falls back from CoinGecko to Kraken when CoinGecko rate-limits
 
+**Zcash news (`/news`, 4th tab)**
+- Only stories about Zcash/ZEC (NewsAPI.org, or NewsData.io; filtered again on our side), newest first, refreshed every 30 minutes to stay inside free-plan limits
+- Search, topic filters (Markets, Privacy & tech, Ecosystem), saved stories on this phone, share, load older stories
+- "Zcash today in 30 seconds": an AI summary of the headlines with the overall mood (headlines only go to the AI service)
+- Needs a news key in `.env.local` (`NEWS_API_KEY`, `NEWS_DATA_API_KEY` or `NEWSDATA_API_KEY` all work)
+
 Next: Phase 9 (polish, demo mode for judges, deployment, video, X post), plus one small real deposit, live trade, live order and withdrawal.
 
 ## Run locally
