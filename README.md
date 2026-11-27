@@ -23,12 +23,12 @@ Zorro keeps everything in ZEC and converts only at the edge, when you pay.
 
 | | |
 |---|---|
-| **Pay anyone, in any coin** | "Send Riya ₹500 in USDC on Base." Enter the amount in INR, USD or the coin, see exactly what it costs in ZEC (fees included), then **slide to pay**. Riya gets the exact amount. |
+| **Pay anyone, in any coin** | "Send Riya $25 in USDC on Base." Enter the amount in USD or in the coin, see exactly what it costs in ZEC (fees included), then **slide to pay**. Riya gets the exact amount. |
 | **Pay Zorro users instantly** | Pay `@handle`s privately between Zorro wallets, with no conversion and no network fee. |
 | **Scan to pay** | Camera or paste: Zcash (ZIP-321), Ethereum/Base/Arbitrum (EIP-681), Solana Pay, Bitcoin (BIP-21), or a plain address. |
 | **Autopay** | Rent on the 1st, family every Friday: weekly or monthly at 9:00 AM IST, converted from ZEC on the day. Pause, resume, pay now. |
 | **Get paid in anything** | Share a link. The payer picks any of 13 coins and gets a one-time address; NEAR Intents converts it to ZEC on arrival. |
-| **Track everything** | Monthly spend, today's limit, a 7-day Income/Spend chart, "where your ZEC went", stacked receipts and CSV export, in INR or USD. |
+| **Track everything** | Monthly spend, today's limit, a 7-day Income/Spend chart, "where your ZEC went", stacked receipts and CSV export, all in US dollars. |
 | **Swap inside the wallet** | ZEC → USDC, SOL, ETH and more (or back), with a live quote, 1% max slippage and slide to swap. |
 | **Ask Zorro (voice + chat)** | Talk or type in English or Indian languages (Sarvam AI speech-to-text, Bulbul voice replies, Sarvam-105B). It answers about ZEC, Zorro and your wallet, shows price charts (ZEC, BTC, ETH, SOL, NEAR), and drafts payments, swaps and Autopays for you to review. It never moves money. |
 | **Zcash news** | Zcash-only headlines with an AI "today in 30 seconds" brief. |
@@ -48,7 +48,7 @@ Zorro keeps everything in ZEC and converts only at the edge, when you pay.
  Add a payee ─► Face ID ──────►  policy_update (destination list) ───►  Only approved payees
                                                                         can ever receive money
 
- Pay ₹500 to Riya (USDC) ─────►  quote: 0.0073 ZEC + fees
+ Pay $25 to Riya (USDC) ──────►  quote: 0.0337 ZEC + fees
                                  worker: swap ZEC → USDC  ───────────►  inside your wallet
                                          withdraw to Riya  ──────────►  arrives on Base
                                  ledger + receipt
@@ -81,9 +81,9 @@ Verified end to end on **NEAR Intents mainnet** with a virtual passkey (no money
 |---|---|
 | Create wallet with one Face ID | ACTIVE in ~13 s, own Zcash address approved as first payee |
 | Approve a new payee (`policy_update`) | ~5 s |
-| Live quote: ₹500 to a USDC-on-Base payee | 5.41 USDC for 0.0073 ZEC + ~₹3 fees (correctly blocked: empty wallet) |
+| Live quote to a USDC-on-Base payee | 5.41 USDC for 0.0073 ZEC plus fees (correctly blocked: empty wallet) |
 | Payment link paid in USDC on Base | Real deposit address that converts to ZEC on arrival |
-| Ask Zorro: "Pay Riya 500 rupees every Friday" | Correct weekly Autopay draft |
+| Ask Zorro: a weekly payment in plain words | Correct weekly Autopay draft |
 | Typecheck, lint, 47 unit tests, production build | Passing |
 
 **Not yet done:** one small real-money payment (and a shielded `u1` delivery test), the live deployment (ready: see Deploy), demo video and the public launch post.
@@ -203,7 +203,7 @@ src/lib/agent-service.ts    wallet creation, rules, grants
 src/lib/agent-api.ts        typed NEAR Intents Agent API client
 src/lib/coins.ts            the 13 coins, address checks, payment URIs
 src/lib/scan.ts             payment-code parser (ZIP-321, EIP-681, Solana Pay, BIP-21)
-src/lib/rates.ts            coin prices (NEAR Intents) + USD→INR
+src/lib/rates.ts            coin prices in USD (NEAR Intents)
 src/lib/assistant.ts       Ask Zorro: context, actions (charts, drafts, screens), model + fallback
 src/lib/sarvam.ts          Sarvam AI: speech-to-text, text-to-speech, chat
 src/lib/history.ts         price history for charts (Kraken)

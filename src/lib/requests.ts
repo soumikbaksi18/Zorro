@@ -24,7 +24,7 @@ export const RequestInputSchema = z.object({
     .trim()
     .regex(/^\d+(\.\d+)?$/, "Enter an amount")
     .refine((a) => Number(a) > 0, "Enter an amount above zero"),
-  currency: z.enum(["USD", "INR", "ZEC"]),
+  currency: z.enum(["USD", "ZEC"]),
   note: z.string().trim().max(120).optional(),
 });
 
@@ -205,7 +205,6 @@ export async function refreshRequest(row: typeof schema.paymentRequests.$inferSe
         fundCoinKey: payCoin.key,
         fundAmount: row.payAmountUnits ? fromUnits(row.payAmountUnits, payCoin.decimals) : null,
         usdValue: usd,
-        inrValue: usd !== null && rates ? usd * rates.usdInr : null,
         zecUsd: rates?.zecUsd ?? null,
         reference: row.id,
         status: "done",

@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowDownUp, Info } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { useCurrency } from "@/lib/client-prefs";
 import { coin, displayAmount } from "@/lib/coins";
 import type { PaymentQuote } from "@/lib/payments";
 import type { PayeeView } from "@/lib/payees";
@@ -14,16 +13,15 @@ import { coinName, useFiat } from "@/components/money";
 import { ErrorBox, Segmented } from "@/components/ui";
 
 type Quote = Omit<PaymentQuote, "plan">;
-type Currency = "COIN" | "INR" | "USD";
+type Currency = "COIN" | "USD";
 
 /** "Sending money": what you send, what they get, fees and rate, then slide to pay. */
 export function PayForm({ payee, initialAmount, initialCurrency }: { payee: PayeeView; initialAmount: string; initialCurrency: string | null }) {
   const router = useRouter();
-  const [pref] = useCurrency();
   const { fmt } = useFiat();
   const c = coin(payee.coinKey);
   const [amount, setAmount] = useState(initialAmount);
-  const [currency, setCurrency] = useState<Currency>(initialCurrency === "COIN" || initialCurrency === "USD" || initialCurrency === "INR" ? initialCurrency : pref);
+  const [currency, setCurrency] = useState<Currency>(initialCurrency === "COIN" ? "COIN" : "USD");
   const [fundWith, setFundWith] = useState<"zec" | "coin">("zec");
   const [note, setNote] = useState("");
   const [quote, setQuote] = useState<{ key: string; value: Quote } | null>(null);
@@ -57,7 +55,6 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
   const q = quote?.key === key ? quote.value : null;
   const qError = quoteError?.key === key ? quoteError.message : null;
   const loading = valid && !q && !qError;
-  const inrPerUsd = q && q.usd > 0 ? q.inr / q.usd : null;
 
   async function pay() {
     if (!q) return;
@@ -97,7 +94,6 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
               onChange={setCurrency}
               className="w-[96px] shrink-0"
               options={[
-                { value: "INR", label: "INR", hint: "₹" },
                 { value: "USD", label: "USD", hint: "$" },
                 { value: "COIN", label: c.symbol, hint: c.chainName },
               ]}
@@ -118,9 +114,9 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
           </p>
           <dl className="tabular mt-4 space-y-2 text-left text-[13px]">
             <Row label="You pay">{q ? `${displayAmount(q.fundAmount)} ${coin(q.fundCoinKey).symbol}` : "—"}</Row>
-            <Row label="Value">{q ? fmt(q.usd, q.inr) : "—"}</Row>
-            <Row label="Fee (convert + network)">{q ? (q.feeUsd === null ? "Shown after" : `≈ ${fmt(q.feeUsd, inrPerUsd ? q.feeUsd * inrPerUsd : null)}`) : "—"}</Row>
-            <Row label="Rate">{q ? `1 ZEC = ${fmt(q.zecUsd, inrPerUsd ? q.zecUsd * inrPerUsd : null)}` : "—"}</Row>
+            <Row label="Value">{q ? fmt(q.usd) : "—"}</Row>
+            <Row label="Fee (convert + network)">{q ? (q.feeUsd === null ? "Shown after" : `≈ ${fmt(q.feeUsd)}`) : "—"}</Row>
+            <Row label="Rate">{q ? `1 ZEC = ${fmt(q.zecUsd)}` : "—"}</Row>
           </dl>
         </div>
 
@@ -172,7 +168,7 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
 
       {error && <ErrorBox message={error} />}
       <SlideToConfirm
-        label={q ? `Slide to pay ${fmt(q.usd, q.inr)}` : "Slide to pay"}
+        label={q ? `Slide to pay ${fmt(q.usd)}` : "Slide to pay"}
         busyLabel={busy ? "Starting…" : null}
         disabled={!q || q.problems.length > 0}
         onConfirm={pay}

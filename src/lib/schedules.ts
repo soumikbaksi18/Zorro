@@ -41,7 +41,7 @@ export const ScheduleInputSchema = z
   .object({
     payeeId: z.string().min(1),
     amount: z.string().trim().regex(/^\d+(\.\d+)?$/, "Enter an amount"),
-    currency: z.enum(["COIN", "USD", "INR"]),
+    currency: z.enum(["COIN", "USD"]),
     frequency: z.enum(["weekly", "monthly"]),
     day: z.number().int(),
     note: z.string().trim().max(120).optional(),
@@ -63,7 +63,7 @@ export type ScheduleView = {
   status: "active" | "paused";
   nextRunAt: string;
   lastRunAt: string | null;
-  estimate: { zec: number; usd: number; inr: number } | null;
+  estimate: { zec: number; usd: number } | null;
 };
 
 export async function listSchedules(user: CurrentUser): Promise<ScheduleView[]> {
@@ -79,7 +79,7 @@ export async function listSchedules(user: CurrentUser): Promise<ScheduleView[]> 
     if (rates) {
       try {
         const usd = toUsd(rates, Number(s.amount), s.currency, coin(s.coinKey));
-        estimate = { usd, inr: usd * rates.usdInr, zec: (usd / rates.zecUsd) * 1.02 };
+        estimate = { usd, zec: (usd / rates.zecUsd) * 1.02 };
       } catch {}
     }
     return {

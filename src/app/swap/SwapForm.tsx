@@ -7,8 +7,7 @@ import { MIN_ZEC, STABLECOINS, ZEC, getStablecoin, type StablecoinKey } from "@/
 import { isValidAddressForChain, zcashAddressKind } from "@/lib/addresses";
 import type { SwapQuote } from "@/lib/swap";
 import type { Spot } from "@/lib/prices";
-import { useCurrency } from "@/lib/client-prefs";
-import { formatFiat } from "@/lib/format";
+import { formatUsd } from "@/lib/format";
 import { rememberAddress, saveSwap, useSavedAddresses } from "@/lib/swap-store";
 import { Segmented } from "@/components/ui";
 
@@ -22,7 +21,6 @@ const SLIPPAGE_OPTIONS = [
 
 export function SwapForm() {
   const router = useRouter();
-  const [currency] = useCurrency();
   const [direction, setDirection] = useState<Direction>("sell");
   const [stable, setStable] = useState<StablecoinKey>("usdc-base");
   const [amount, setAmount] = useState("");
@@ -70,7 +68,6 @@ export function SwapForm() {
   const estimateOut =
     spot && amountNum > 0 ? (direction === "sell" ? amountNum * spot.zecUsd : amountNum / spot.zecUsd) : null;
   const usdValue = spot && amountNum > 0 ? (direction === "sell" ? amountNum * spot.zecUsd : amountNum) : null;
-  const fiatValue = usdValue !== null && spot ? usdValue * (currency === "INR" ? spot.usdInr : 1) : null;
 
   const recipientOk = isValidAddressForChain(destination.chain, recipient);
   const refundOk = isValidAddressForChain(origin.chain, refundTo);
@@ -177,7 +174,7 @@ export function SwapForm() {
           </div>
           <p className="tabular text-xs text-muted">
             {[
-              fiatValue !== null && `≈ ${formatFiat(fiatValue, currency)}`,
+              usdValue !== null && `≈ ${formatUsd(usdValue)}`,
               estimateOut !== null && `you get about ${estimateOut.toFixed(direction === "sell" ? 2 : 5)} ${destination.symbol}`,
               direction === "sell" && `min ${MIN_ZEC} ZEC`,
             ]

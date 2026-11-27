@@ -11,7 +11,7 @@ import { BrandMark } from "@/components/shell/Brand";
 import { CopyButton, ErrorBox, QrCode } from "@/components/ui";
 
 const amountText = (r: { amount: string; currency: string }) =>
-  r.currency === "INR" ? `₹${Number(r.amount).toLocaleString("en-IN")}` : r.currency === "USD" ? `$${Number(r.amount).toLocaleString("en-US")}` : `${r.amount} ZEC`;
+  r.currency === "INR" ? `${Number(r.amount).toLocaleString("en-US")} INR` : r.currency === "USD" ? `$${Number(r.amount).toLocaleString("en-US")}` : `${r.amount} ZEC`;
 
 /** What someone sees when they open a Zorro payment link (no account needed). */
 export function PayRequest({ id }: { id: string }) {

@@ -1,9 +1,8 @@
-import type { Currency } from "./client-prefs";
-
-export function formatFiat(value: number, currency: Currency, opts?: { compact?: boolean }): string {
-  return new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
+/** US dollars, e.g. $1,248.60 (whole dollars from $1,000 up, or when compact). */
+export function formatUsd(value: number, opts?: { compact?: boolean }): string {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency,
+    currency: "USD",
     maximumFractionDigits: opts?.compact || value >= 1000 ? 0 : 2,
     minimumFractionDigits: opts?.compact || value >= 1000 ? 0 : 2,
   }).format(value);

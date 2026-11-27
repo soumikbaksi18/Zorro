@@ -332,7 +332,7 @@ function ActionCard({ action: a }: { action: AssistantAction }) {
       <section className="panel p-4" aria-label="Your balances">
         <p className="flex items-baseline justify-between text-sm">
           <span className="font-semibold">Your balance</span>
-          <span className="tabular font-semibold">{fmt(a.balances.totalUsd, a.balances.totalInr)}</span>
+          <span className="tabular font-semibold">{fmt(a.balances.totalUsd)}</span>
         </p>
         <ul className="mt-3 flex flex-col gap-2.5">
           {a.balances.coins.map((c) => (
@@ -343,7 +343,7 @@ function ActionCard({ action: a }: { action: AssistantAction }) {
               </span>
               <span className="tabular text-right">
                 <span className="block">{Number(c.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })}</span>
-                <span className="block text-xs text-snow/50">{fmt(c.usd, c.inr)}</span>
+                <span className="block text-xs text-snow/50">{fmt(c.usd)}</span>
               </span>
             </li>
           ))}

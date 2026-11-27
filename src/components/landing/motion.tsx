@@ -63,7 +63,7 @@ export function CountUp({ to, decimals = 0, prefix = "", suffix = "", duration =
   return (
     <span ref={ref} className="tabular">
       {prefix}
-      {value.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
+      {value.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
       {suffix}
     </span>
   );

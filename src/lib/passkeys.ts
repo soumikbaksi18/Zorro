@@ -16,7 +16,9 @@ import type { AuthenticationResponseJSON, RegistrationResponseJSON } from "@simp
 import { db, schema } from "@/db";
 import { AuthError, createSession, requestOrigin, type CurrentUser } from "./session";
 
-const CHALLENGE_COOKIE = "zorro_challenge";
+// One cookie per purpose, so the app can fetch sign-up and sign-in options ahead of the tap
+// (Safari only opens Face ID if it is asked right after the tap, with no network wait).
+const challengeCookie = (purpose: "register" | "login") => `zorro_challenge_${purpose}`;
 const CHALLENGE_TTL_MS = 5 * 60_000;
 
 /** P-256 COSE key → SPKI (base64url), the format the Agent API expects for passkey owners. */
@@ -41,7 +43,7 @@ async function saveChallenge(purpose: "register" | "login", challenge: string, s
   await db
     .insert(schema.authChallenges)
     .values({ id, purpose, challenge, expiresAt: new Date(Date.now() + CHALLENGE_TTL_MS) });
-  (await cookies()).set(CHALLENGE_COOKIE, id, {
+  (await cookies()).set(challengeCookie(purpose), id, {
     httpOnly: true,
     secure,
     sameSite: "strict",
@@ -53,8 +55,8 @@ async function saveChallenge(purpose: "register" | "login", challenge: string, s
 /** Read and delete the challenge (one use only). */
 async function takeChallenge(purpose: "register" | "login"): Promise<string> {
   const jar = await cookies();
-  const id = jar.get(CHALLENGE_COOKIE)?.value;
-  jar.delete(CHALLENGE_COOKIE);
+  const id = jar.get(challengeCookie(purpose))?.value;
+  jar.delete(challengeCookie(purpose));
   if (!id) throw new AuthError("Passkey request expired. Please try again.");
   const [row] = await db.select().from(schema.authChallenges).where(eq(schema.authChallenges.id, id)).limit(1);
   await db.delete(schema.authChallenges).where(eq(schema.authChallenges.id, id));

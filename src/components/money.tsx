@@ -5,8 +5,7 @@
 import { useSyncExternalStore } from "react";
 import { CircleCheck, CircleDashed, CircleX, Clock3, LoaderCircle, TriangleAlert } from "lucide-react";
 import { findCoin, type Coin } from "@/lib/coins";
-import { useCurrency, type Currency } from "@/lib/client-prefs";
-import { formatFiat } from "@/lib/format";
+import { formatUsd } from "@/lib/format";
 
 // Official coin and network logos from @web3icons/core (MIT), extracted to /public/coins and /public/chains.
 const COIN_LOGO: Record<string, string> = { ZEC: "zec", USDC: "usdc", USDT: "usdt", SOL: "sol", ETH: "eth", BTC: "btc", NEAR: "near" };
@@ -50,23 +49,15 @@ export function coinName(c: Coin | undefined): string {
   return c.kind === "zec" || c.symbol.toUpperCase() === c.chainName.toUpperCase() ? c.symbol : `${c.symbol} on ${c.chainName}`;
 }
 
-/** Fiat in the user's display currency (INR by default). */
-export function useFiat(): { currency: Currency; fmt: (usd: number | null | undefined, inr?: number | null, opts?: { compact?: boolean }) => string } {
-  const [currency] = useCurrency();
-  return {
-    currency,
-    fmt: (usd, inr, opts) => {
-      if (currency === "INR" && inr !== null && inr !== undefined) return formatFiat(inr, "INR", opts);
-      if (usd === null || usd === undefined) return "—";
-      return formatFiat(usd, "USD", opts);
-    },
-  };
+/** Amounts are shown in US dollars everywhere. */
+export function useFiat(): { fmt: (usd: number | null | undefined, opts?: { compact?: boolean }) => string } {
+  return { fmt: (usd, opts) => (usd === null || usd === undefined ? "—" : formatUsd(usd, opts)) };
 }
 
 /** Big balance with the decimals dimmed, like a bank app. */
-export function BigFiat({ value, currency, hidden, dim = "text-snow/35" }: { value: number; currency: Currency; hidden?: boolean; dim?: string }) {
+export function BigFiat({ value, hidden, dim = "text-snow/35" }: { value: number; hidden?: boolean; dim?: string }) {
   if (hidden) return <span className="tabular tracking-[-0.04em]">••••••</span>;
-  const text = formatFiat(value, currency);
+  const text = formatUsd(value);
   const dot = text.lastIndexOf(".");
   const [head, tail] = dot > 0 ? [text.slice(0, dot), text.slice(dot)] : [text, ""];
   return (

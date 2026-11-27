@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AtSign, Fingerprint, Plus, Trash2, Wallet } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { approvePayees, useAccount } from "@/lib/account-client";
+import { preparePayeeApproval, signPayeeApproval, useAccount, type PreparedApproval } from "@/lib/account-client";
 import { shortAddress } from "@/lib/addresses";
 import { coin, findCoin, isValidAddress } from "@/lib/coins";
 import type { PayeeView } from "@/lib/payees";
@@ -22,6 +22,7 @@ export function PayeesManager() {
   const [payees, setPayees] = useState<PayeeView[] | null>(null);
   const [adding, setAdding] = useState(Boolean(prefill.address));
   const [approving, setApproving] = useState<string | null>(null);
+  const [prepared, setPrepared] = useState<PreparedApproval | null>(null);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const hasWallet = account.status === "ready" && account.me.agent?.status === "ACTIVE";
 
@@ -52,10 +53,27 @@ export function PayeesManager() {
   const approved = payees?.filter((p) => p.status === "approved") ?? [];
   const waiting = payees?.filter((p) => p.status === "pending" || p.status === "approving") ?? [];
 
-  async function approve() {
+  // Two taps: prepare (talks to NEAR Intents), then Face ID. Safari only opens Face ID when it's
+  // asked right after a tap, so the passkey prompt never waits on the network.
+  const ready = prepared && prepared.count === waiting.length ? prepared : null;
+
+  async function prepare() {
+    setMessage(null);
+    setApproving("Preparing your new rules…");
+    try {
+      setPrepared(await preparePayeeApproval());
+    } catch (e) {
+      setMessage({ kind: "error", text: e instanceof Error ? e.message : "Couldn't prepare the approval" });
+    } finally {
+      setApproving(null);
+    }
+  }
+
+  async function approve(p: PreparedApproval) {
     setMessage(null);
     try {
-      const r = await approvePayees(setApproving);
+      const r = await signPayeeApproval(p, setApproving);
+      setPrepared(null);
       if (r.status === "APPROVED") setMessage({ kind: "ok", text: `Approved ${r.count} payee${r.count === 1 ? "" : "s"}. You can pay them now.` });
       else if (r.status === "FAILED") setMessage({ kind: "error", text: `NEAR Intents didn't apply it (${r.reason}). Nothing changed.` });
       else setMessage({ kind: "ok", text: "Still confirming on NEAR. Check again in a minute." });
@@ -87,11 +105,13 @@ export function PayeesManager() {
               <PayeeRow key={p.id} p={p} onRemove={() => remove(p)} />
             ))}
           </ul>
-          <button type="button" onClick={approve} disabled={approving !== null} className="btn-primary mt-5 w-full">
+          <button type="button" onClick={() => (ready ? approve(ready) : prepare())} disabled={approving !== null} className="btn-primary mt-5 w-full">
             <Fingerprint size={17} aria-hidden="true" />
-            {approving ?? `Approve ${waiting.length} with Face ID`}
+            {approving ?? (ready ? "Confirm with Face ID" : `Approve ${waiting.length} with Face ID`)}
           </button>
-          <p className="mt-2 text-center text-xs text-dim">One signature approves them all. NEAR Intents allows one rules change every 10 minutes.</p>
+          <p className="mt-2 text-center text-xs text-dim">
+            {ready ? `Ready: one Face ID approves all ${ready.count}.` : "One signature approves them all."} NEAR Intents allows one rules change every 10 minutes.
+          </p>
         </section>
       )}
 

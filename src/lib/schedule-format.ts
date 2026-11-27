@@ -11,8 +11,9 @@ export function describeSchedule(s: { frequency: "weekly" | "monthly"; day: numb
 }
 
 export function amountLabel(amount: string, currency: "COIN" | "USD" | "INR", coinKey: string) {
+  // "INR" only appears on Autopays saved by older versions; new ones are USD or the coin.
   return currency === "INR"
-    ? `₹${Number(amount).toLocaleString("en-IN")}`
+    ? `${Number(amount).toLocaleString("en-US")} INR`
     : currency === "USD"
       ? `$${Number(amount).toLocaleString("en-US")}`
       : `${displayAmount(amount)} ${coin(coinKey).symbol}`;

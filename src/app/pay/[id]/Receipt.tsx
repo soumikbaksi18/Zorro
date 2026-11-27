@@ -56,7 +56,7 @@ export function Receipt({ id }: { id: string }) {
         </div>
         <p className="tabular mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em]">
           {out ? "" : "+"}
-          {fmt(p.usd, p.inr)}
+          {fmt(p.usd)}
         </p>
         <p className="tabular mt-2 text-sm text-brand-ink/70">
           {displayAmount(p.amount)} {coinName(c)}
@@ -94,8 +94,8 @@ export function Receipt({ id }: { id: string }) {
           <Row label={out ? "They received" : "You received"}>
             {displayAmount(p.amount)} {coinName(c)}
           </Row>
-          {p.zecUsd && <Row label="ZEC price then">{fmt(p.zecUsd, p.inr && p.usd ? (p.zecUsd * p.inr) / p.usd : null)}</Row>}
-          {p.feeUsd !== null && <Row label="Fees">≈ {fmt(p.feeUsd, p.inr && p.usd ? (p.feeUsd * p.inr) / p.usd : null)}</Row>}
+          {p.zecUsd && <Row label="ZEC price then">{fmt(p.zecUsd)}</Row>}
+          {p.feeUsd !== null && <Row label="Fees">≈ {fmt(p.feeUsd)}</Row>}
           <Row label="Type">{{ pay: "Payment", transfer: "Zorro transfer", autopay: "Autopay", request: "Payment link", deposit: "Added money", swap: "Swap" }[p.kind] ?? p.kind}</Row>
           {p.note && <Row label="Note">{p.note}</Row>}
         </dl>

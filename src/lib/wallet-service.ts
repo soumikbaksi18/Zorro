@@ -23,18 +23,15 @@ async function requireAgent(user: CurrentUser) {
 
 export type WalletBalances = {
   totalUsd: number;
-  totalInr: number;
-  usdInr: number;
   zecUsd: number | null;
   /** ZEC first (always), then every other coin with a balance. */
-  coins: { key: string; symbol: string; name: string; chainName: string; amount: string; usd: number | null; inr: number | null }[];
+  coins: { key: string; symbol: string; name: string; chainName: string; amount: string; usd: number | null }[];
   limit: { limitUsd: string | null; spentUsd: string | null; remainingUsd: string | null; resetsAt: string | null } | null;
 };
 
 export async function balancesFor(user: CurrentUser): Promise<WalletBalances> {
   const agent = await requireAgent(user);
   const [{ balances }, rates, policy] = await Promise.all([getBalances(agent.id), getRates().catch(() => null), getPolicy(agent.id).catch(() => null)]);
-  const usdInr = rates?.usdInr ?? 0;
 
   const coins: WalletBalances["coins"] = [];
   for (const c of COINS) {
@@ -43,14 +40,12 @@ export async function balancesFor(user: CurrentUser): Promise<WalletBalances> {
     const amount = fromUnits(raw, c.decimals);
     const price = rates?.usd[c.key];
     const usd = price === undefined ? null : Number(amount) * price;
-    coins.push({ key: c.key, symbol: c.symbol, name: c.name, chainName: c.chainName, amount, usd, inr: usd === null ? null : usd * usdInr });
+    coins.push({ key: c.key, symbol: c.symbol, name: c.name, chainName: c.chainName, amount, usd });
   }
   const totalUsd = coins.reduce((s, c) => s + (c.usd ?? 0), 0);
   const daily = policy?.usage?.budget.daily;
   return {
     totalUsd,
-    totalInr: totalUsd * usdInr,
-    usdInr,
     zecUsd: rates?.zecUsd ?? null,
     coins,
     limit: daily ? { limitUsd: daily.limit_usd, spentUsd: daily.spent_usd, remainingUsd: daily.remaining_usd, resetsAt: daily.resets_at } : null,
@@ -180,7 +175,6 @@ async function recordDeposit(row: typeof schema.operations.$inferSelect, op: Ope
     fundCoinKey: c.key,
     fundAmount: amount || null,
     usdValue: usd,
-    inrValue: usd !== null && rates ? usd * rates.usdInr : null,
     zecUsd: rates?.zecUsd ?? null,
     reference: row.correlationId,
     note: amount ? null : "Amount shown in your balance",

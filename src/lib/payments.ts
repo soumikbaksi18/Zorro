@@ -60,7 +60,6 @@ export type PaymentQuote = {
   coinKey: string;
   amount: string; // payee receives (human units)
   usd: number;
-  inr: number;
   fundCoinKey: string;
   fundAmount: string; // you pay (human units of fundCoinKey)
   feeUsd: number | null;
@@ -166,7 +165,6 @@ export async function quotePayment(user: CurrentUser, input: PayInput): Promise<
     coinKey: c.key,
     amount,
     usd,
-    inr: usd * rates.usdInr,
     fundCoinKey: fund.key,
     fundAmount: fromUnits(fundUnits, fund.decimals),
     feeUsd: feeKnown ? feeUsd : null,
@@ -200,7 +198,6 @@ export async function createPayment(user: CurrentUser, input: PayInput, opts: { 
     fundCoinKey: quote.fundCoinKey,
     fundAmount: quote.fundAmount,
     usdValue: quote.usd,
-    inrValue: quote.inr,
     feeUsd: quote.feeUsd,
     zecUsd: quote.zecUsd,
     reference: newReference(),
@@ -242,8 +239,8 @@ export const ConvertInputSchema = z.object({
   from: z.enum(COIN_KEYS),
   to: z.enum(COIN_KEYS),
   amount: z.string().trim().regex(/^\d+(\.\d+)?$/, "Enter an amount"),
-  /** The amount is in the "from" coin, or in INR/USD worth of it. */
-  amountIn: z.enum(["COIN", "INR", "USD"]).default("COIN"),
+  /** The amount is in the "from" coin, or in USD worth of it. */
+  amountIn: z.enum(["COIN", "USD"]).default("COIN"),
 });
 export type ConvertInput = z.infer<typeof ConvertInputSchema>;
 
@@ -254,7 +251,6 @@ export type ConvertQuote = {
   toAmount: string; // expected
   minToAmount: string; // never less than this (1% slippage)
   usd: number;
-  inr: number;
   feeUsd: number | null;
   rate: number; // "to" per one "from"
   zecUsd: number;
@@ -320,7 +316,6 @@ export async function quoteConvert(user: CurrentUser, input: ConvertInput): Prom
     toAmount,
     minToAmount: fromUnits(minOut.toString(), to.decimals),
     usd,
-    inr: usd * rates.usdInr,
     feeUsd,
     rate: Number(fromAmount) > 0 ? Number(toAmount) / Number(fromAmount) : 0,
     zecUsd: rates.zecUsd,
@@ -362,7 +357,6 @@ export async function createConvert(user: CurrentUser, input: ConvertInput): Pro
     fundCoinKey: from.key,
     fundAmount: quote.fromAmount,
     usdValue: quote.usd,
-    inrValue: quote.inr,
     feeUsd: quote.feeUsd,
     zecUsd: quote.zecUsd,
     reference: newReference(),
@@ -611,7 +605,6 @@ async function recordInboundTransfer(row: PaymentRow) {
     fundCoinKey: row.coinKey,
     fundAmount: row.amount,
     usdValue: row.usdValue,
-    inrValue: row.inrValue,
     zecUsd: row.zecUsd,
     reference: row.reference,
     status: "done",
@@ -631,7 +624,6 @@ export type PaymentView = {
   fundCoinKey: string;
   fundAmount: string | null;
   usd: number | null;
-  inr: number | null;
   feeUsd: number | null;
   zecUsd: number | null;
   reference: string | null;
@@ -656,7 +648,6 @@ export function paymentView(r: PaymentRow): PaymentView {
     fundCoinKey: r.fundCoinKey,
     fundAmount: r.fundAmount,
     usd: r.usdValue,
-    inr: r.inrValue,
     feeUsd: r.feeUsd,
     zecUsd: r.zecUsd,
     reference: r.reference,
@@ -698,9 +689,7 @@ export async function getPayment(user: CurrentUser, id: string, opts: { advance?
 export type MonthSummary = {
   month: string;
   sentUsd: number;
-  sentInr: number;
   receivedUsd: number;
-  receivedInr: number;
   zecSpent: number;
   feesUsd: number;
   count: number;
@@ -713,13 +702,12 @@ export async function monthSummary(user: CurrentUser, now = new Date()): Promise
     .select()
     .from(schema.payments)
     .where(and(eq(schema.payments.userId, user.id), eq(schema.payments.status, "done"), gte(schema.payments.createdAt, start), lt(schema.payments.createdAt, new Date(now.getTime() + 1000))));
-  const s: MonthSummary = { month: start.toISOString().slice(0, 7), sentUsd: 0, sentInr: 0, receivedUsd: 0, receivedInr: 0, zecSpent: 0, feesUsd: 0, count: rows.length, byCoin: [] };
+  const s: MonthSummary = { month: start.toISOString().slice(0, 7), sentUsd: 0, receivedUsd: 0, zecSpent: 0, feesUsd: 0, count: rows.length, byCoin: [] };
   const byCoin = new Map<string, { amount: number; usd: number }>();
   for (const r of rows) {
     if (r.kind === "swap") continue; // conversions inside the wallet aren't spending
     if (r.direction === "out") {
       s.sentUsd += r.usdValue ?? 0;
-      s.sentInr += r.inrValue ?? 0;
       if (r.fundCoinKey === "zec") s.zecSpent += Number(r.fundAmount ?? 0);
       s.feesUsd += r.feeUsd ?? 0;
       const b = byCoin.get(r.coinKey) ?? { amount: 0, usd: 0 };
@@ -728,7 +716,6 @@ export async function monthSummary(user: CurrentUser, now = new Date()): Promise
       byCoin.set(r.coinKey, b);
     } else {
       s.receivedUsd += r.usdValue ?? 0;
-      s.receivedInr += r.inrValue ?? 0;
     }
   }
   s.byCoin = [...byCoin.entries()].map(([coinKey, v]) => ({ coinKey, ...v })).sort((a, b) => b.usd - a.usd);
@@ -738,7 +725,7 @@ export async function monthSummary(user: CurrentUser, now = new Date()): Promise
 /** The whole ledger as CSV (opened in Sheets / Excel). */
 export async function ledgerCsv(user: CurrentUser): Promise<string> {
   const rows = await listPayments(user, { limit: 5000 });
-  const head = ["date", "direction", "counterparty", "amount", "coin", "chain", "paid_with", "paid_with_amount", "usd", "inr", "fee_usd", "zec_price_usd", "status", "reference", "note"];
+  const head = ["date", "direction", "counterparty", "amount", "coin", "chain", "paid_with", "paid_with_amount", "usd", "fee_usd", "zec_price_usd", "status", "reference", "note"];
   const esc = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) || /^[=+\-@]/.test(s) ? `"${s.replace(/^([=+\-@])/, "'$1").replace(/"/g, '""')}"` : s;
@@ -755,7 +742,6 @@ export async function ledgerCsv(user: CurrentUser): Promise<string> {
       coin(r.fundCoinKey).symbol,
       r.fundAmount,
       r.usd?.toFixed(2),
-      r.inr?.toFixed(2),
       r.feeUsd?.toFixed(4),
       r.zecUsd?.toFixed(2),
       r.status,

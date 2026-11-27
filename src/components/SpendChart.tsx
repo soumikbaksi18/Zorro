@@ -30,13 +30,11 @@ export function SpendChart({
   payments,
   mode,
   now,
-  currency,
   format,
 }: {
   payments: PaymentView[];
   mode: "in" | "out";
   now: number;
-  currency: "INR" | "USD";
   format: (v: number) => string;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => now - (6 - i) * DAY);
@@ -44,7 +42,7 @@ export function SpendChart({
     const key = dayKey(t);
     return payments
       .filter((p) => p.status === "done" && p.direction === mode && dayKey(new Date(p.completedAt ?? p.createdAt).getTime()) === key)
-      .reduce((s, p) => s + ((currency === "INR" ? p.inr : p.usd) ?? 0), 0);
+      .reduce((s, p) => s + (p.usd ?? 0), 0);
   });
   const max = Math.max(...totals);
   const top = max > 0 ? max * 1.25 : 1;
@@ -59,7 +57,7 @@ export function SpendChart({
   const points = totals.map((v, i) => [x(i), y(v)] as [number, number]);
   const grid = [0, 0.25, 0.5, 0.75, 1].map((f) => f * top);
   const short = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : Math.round(v).toString());
-  const sym = currency === "INR" ? "₹" : "$";
+  const sym = "$";
 
   return (
     <figure className="m-0">

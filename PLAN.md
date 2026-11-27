@@ -12,7 +12,7 @@ Version 1 of Zorro was a ZEC trading-bot app; after feedback from the Zcash comm
 - Today, paying someone in another coin means swapping first, often pasting an address from *another* wallet app, then sending. There are no scheduled payments, no address book you can trust, and no record of what each payment cost you in ZEC.
 - **Zorro:** keep everything in ZEC; pay in any coin; payments can repeat on a schedule; payees are approved once with Face ID; every conversion is recorded.
 
-> **Novelty check (to do before Phase 1 ends):** Zashi's "CrossPay" (via NEAR Intents) already lets you pay an address in another coin from shielded ZEC. Confirm what it covers today. Zorro's differentiators: **Autopay** (scheduled payments), **instant Zorro-to-Zorro transfers by name**, **Face ID-approved payees**, **get paid in any coin, receive ZEC**, **conversion ledger with INR values**, and an **AI that sets up payments from plain words**.
+> **Novelty check (to do before Phase 1 ends):** Zashi's "CrossPay" (via NEAR Intents) already lets you pay an address in another coin from shielded ZEC. Confirm what it covers today. Zorro's differentiators: **Autopay** (scheduled payments), **instant Zorro-to-Zorro transfers by name**, **Face ID-approved payees**, **get paid in any coin, receive ZEC**, **conversion ledger with USD values**, and an **AI that sets up payments from plain words**.
 
 ---
 
@@ -24,10 +24,10 @@ Version 1 of Zorro was a ZEC trading-bot app; after feedback from the Zcash comm
 | **Pay a person** | "Send Riya $20 in USDC on Base" | ZEC → USDC swap inside the wallet, then a withdrawal to her address. The screen shows what it costs in ZEC before you confirm |
 | **Pay a Zorro user** | "Send @arjun 0.05 ZEC" | `transfer` between two NEAR Intents accounts: instant, private, no conversion |
 | **Spend at an app** | Scan a checkout QR asking for 25 USDC | Read the payment request (ZIP-321, EIP-681, Solana Pay, or address + amount), pay the exact amount in the asked coin |
-| **Autopay** | "Pay my landlord ₹15,000 in USDC on the 1st of every month" | A schedule the worker runs: quote → pay → receipt. Warns early if the ZEC balance won't cover it |
+| **Autopay** | "Pay my landlord $200 in USDC on the 1st of every month" | A schedule the worker runs: quote → pay → receipt. Warns early if the ZEC balance won't cover it |
 | **Get paid** | Send a client a link for $100 | A payment link where the payer chooses any supported coin; it arrives in Zorro as ZEC |
-| **Track** | "What did I spend this month, and at what rates?" | A ledger of every payment and conversion: ZEC spent, coin delivered, rate, fees, status, in ZEC, USD and INR. CSV export |
-| **Ask** | "Pay Arjun 500 rupees in SOL every Friday" | The AI drafts the payment or schedule; you review and confirm with Face ID |
+| **Track** | "What did I spend this month, and at what rates?" | A ledger of every payment and conversion: ZEC spent, coin delivered, rate, fees, status, in ZEC and USD. CSV export |
+| **Ask** | "Pay Arjun $10 in SOL every Friday" | The AI drafts the payment or schedule; you review and confirm with Face ID |
 
 **"Spend at any app" means any app that accepts crypto on a chain NEAR Intents supports** (EVM chains, Solana, Bitcoin, NEAR, Tron, and more). It is not a card: no UPI or card payments in this version.
 
@@ -127,12 +127,12 @@ Shown in plain words before signing: "Zorro can pay up to $100 a day, only to pe
 | Phase | Goal | Done when |
 |---|---|---|
 | ✅ 1. Remove trading, new shell | Trading code removed; tab bar **Home · Pay · Tracker · News · Account**; Zcash-yellow brand with a Vaulta-style home and stacked receipt cards | Done: typecheck, lint, 47 unit tests and production build pass |
-| ✅ 2. Wallet home + Receive | Balance card in INR/USD, coin cards, quick actions, last payments; Add money for any coin | Done: verified with a real mainnet deposit address |
+| ✅ 2. Wallet home + Receive | Balance card in USD, coin cards, quick actions, last payments; Add money for any coin | Done: verified with a real mainnet deposit address |
 | ✅ 3. Payees + Pay | Payees (address or @handle), batch Face ID approval, quote in ZEC with fees, convert → send engine, receipts | Approval verified on mainnet (~5 s); quote verified. **Pending: one small real payment + `u1` test** |
 | ✅ 4. Spend (scan to pay) | Camera (jsQR) + paste; ZIP-321, EIP-681, Solana Pay, BIP-21, plain addresses | Done (parser unit-tested; paste flow verified in the browser) |
-| ✅ 5. Autopay | Weekly/monthly at 9:00 IST, INR/USD/coin amounts, pause/resume/pay now/delete, skipped runs recorded | Done (date maths unit-tested; creation verified). Live run needs a funded wallet |
+| ✅ 5. Autopay | Weekly/monthly at 9:00 IST, USD or coin amounts, pause/resume/pay now/delete, skipped runs recorded | Done (date maths unit-tested; creation verified). Live run needs a funded wallet |
 | ✅ 6. Get paid + Tracker | Payment links (payer picks any coin, arrives as ZEC); Tracker with monthly totals, today's limit, breakdown, receipts, CSV | Done: link produced a real deposit address |
-| ✅ 7. AI payments | Plain words → drafted payment or Autopay → reviewed on the normal screen | Done: "Pay Riya 500 rupees every Friday" → correct weekly Autopay draft |
+| ✅ 7. AI payments | Plain words → drafted payment or Autopay → reviewed on the normal screen | Done: a weekly payment in plain words → correct weekly Autopay draft |
 | **8. Polish and submit** | Demo mode (simulated schedule run), error states, privacy copy, deployment (HTTPS + always-on worker), README, video, X post | Clean demo on a real phone |
 
 ---

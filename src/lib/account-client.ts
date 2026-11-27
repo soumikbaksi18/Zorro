@@ -72,28 +72,79 @@ async function post<T>(url: string, body?: unknown): Promise<T> {
 function explain(e: unknown): PasskeyError {
   if (e instanceof PasskeyError) return e;
   if (e instanceof WebAuthnError && e.code === "ERROR_CEREMONY_ABORTED") return new PasskeyError("Cancelled.");
-  if (e instanceof Error && e.name === "NotAllowedError") return new PasskeyError("Cancelled or timed out.");
+  if (e instanceof Error && e.name === "NotAllowedError") {
+    return new PasskeyError(
+      "Face ID was cancelled or didn't open. Tap the button again. On iPhone, passkeys also need iCloud Keychain (Settings → your name → iCloud → Passwords).",
+    );
+  }
   return new PasskeyError(e instanceof Error ? e.message : "Passkey failed");
 }
 
+// Safari (iPhone, iPad, Mac) only opens Face ID / Touch ID when it's asked right after a tap.
+// Waiting for the server first can make it cancel silently, so the options are fetched ahead
+// of time and the tap goes straight to the passkey prompt.
+
+type RegisterOptions = Parameters<typeof startRegistration>[0]["optionsJSON"];
+type LoginOptions = Parameters<typeof startAuthentication>[0]["optionsJSON"];
+type Warm<T> = { options: T; at: number };
+
+const OPTIONS_FRESH_MS = 4 * 60_000; // server challenges last 5 minutes
+let warmRegister: Warm<RegisterOptions> | null = null;
+let warmLogin: Warm<LoginOptions> | null = null;
+let warming: Promise<void> | null = null;
+
+const fresh = <T>(w: Warm<T> | null) => (w && Date.now() - w.at < OPTIONS_FRESH_MS ? w.options : null);
+
+/** Fetch sign-up and sign-in options before the user taps (call on screens with passkey buttons). */
+export function warmPasskeys(): Promise<void> {
+  warming ??= Promise.all([
+    fresh(warmRegister)
+      ? null
+      : post<RegisterOptions>("/api/auth/register/options").then((options) => {
+          warmRegister = { options, at: Date.now() };
+        }),
+    fresh(warmLogin)
+      ? null
+      : post<LoginOptions>("/api/auth/login/options").then((options) => {
+          warmLogin = { options, at: Date.now() };
+        }),
+  ])
+    .then(() => undefined)
+    .catch(() => undefined)
+    .finally(() => {
+      warming = null;
+    });
+  return warming;
+}
+
+/** Must be called straight from a tap handler: no await happens before the passkey prompt opens. */
 export async function createPasskey(): Promise<void> {
+  const ready = fresh(warmRegister);
+  warmRegister = null; // each challenge is single-use
   try {
-    const optionsJSON = await post<Parameters<typeof startRegistration>[0]["optionsJSON"]>("/api/auth/register/options");
-    const response = await startRegistration({ optionsJSON });
+    const response = await (ready
+      ? startRegistration({ optionsJSON: ready })
+      : post<RegisterOptions>("/api/auth/register/options").then((optionsJSON) => startRegistration({ optionsJSON })));
     await post("/api/auth/register/verify", response);
   } catch (e) {
+    void warmPasskeys(); // ready for the next tap
     throw explain(e);
   } finally {
     await refreshAccount();
   }
 }
 
+/** Must be called straight from a tap handler: no await happens before the passkey prompt opens. */
 export async function signInWithPasskey(): Promise<void> {
+  const ready = fresh(warmLogin);
+  warmLogin = null;
   try {
-    const optionsJSON = await post<Parameters<typeof startAuthentication>[0]["optionsJSON"]>("/api/auth/login/options");
-    const response = await startAuthentication({ optionsJSON });
+    const response = await (ready
+      ? startAuthentication({ optionsJSON: ready })
+      : post<LoginOptions>("/api/auth/login/options").then((optionsJSON) => startAuthentication({ optionsJSON })));
     await post("/api/auth/login/verify", response);
   } catch (e) {
+    void warmPasskeys(); // ready for the next tap
     throw explain(e);
   } finally {
     await refreshAccount();
@@ -147,10 +198,15 @@ export async function signAndCreateWallet(prepared: Prepared, onProgress: (step:
 
 type ApprovalResult = { status: "APPROVED"; count: number } | { status: "PROCESSING"; correlationId: string } | { status: "FAILED"; reason: string };
 
-/** Approve every waiting payee with one Face ID (a policy update on NEAR Intents). */
-export async function approvePayees(onProgress: (step: string) => void): Promise<ApprovalResult> {
-  onProgress("Preparing your new rules…");
-  const prepared = await post<{ correlationId: string; webauthnOptions: Record<string, unknown>; count: number }>("/api/payees/approve", { step: "prepare" });
+export type PreparedApproval = { correlationId: string; webauthnOptions: Record<string, unknown>; count: number };
+
+/** Step 1 (own tap): build the rules change that approves every waiting payee. */
+export function preparePayeeApproval(): Promise<PreparedApproval> {
+  return post<PreparedApproval>("/api/payees/approve", { step: "prepare" });
+}
+
+/** Step 2 (call straight from the Face ID tap): sign it with the passkey and save it on NEAR Intents. */
+export async function signPayeeApproval(prepared: PreparedApproval, onProgress: (step: string) => void): Promise<ApprovalResult> {
   onProgress("Confirm with Face ID or your fingerprint…");
   const credential = await signIntent(prepared.webauthnOptions);
   onProgress("Saving your approved payees on NEAR Intents…");

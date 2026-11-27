@@ -92,7 +92,7 @@ function Hero() {
       </Reveal>
       <Reveal delay={200}>
         <p className="mt-4 text-[16px] leading-relaxed text-snow/70">
-          Hold ZEC. Pay anyone in the coin they want. Zorro converts at the moment you pay, through NEAR Intents, and tracks every rupee.
+          Hold ZEC. Pay anyone in the coin they want. Zorro converts at the moment you pay, through NEAR Intents, and tracks every dollar.
         </p>
       </Reveal>
       <Reveal delay={300} className="mt-7 flex gap-3">
@@ -139,16 +139,16 @@ function PhoneMock() {
         <div className="glass-card anim-shimmer mt-3 p-3.5">
           <p className="w-fit rounded-full bg-white/55 px-2 py-0.5 text-[9px] font-semibold">Main wallet (ZEC)</p>
           <p className="mt-5 text-[22px] leading-none font-semibold tracking-[-0.03em]">
-            <CountUp to={48250.6} decimals={2} prefix="₹" duration={1800} />
+            <CountUp to={1248.6} decimals={2} prefix="$" duration={1800} />
           </p>
-          <p className="mt-1 text-[9px] font-medium text-brand-ink/70">0.6942 ZEC</p>
+          <p className="mt-1 text-[9px] font-medium text-brand-ink/70">1.7026 ZEC</p>
         </div>
         <p className="mt-4 px-1 text-[11px] font-medium text-snow/70">Transactions</p>
         <ul className="mt-2 flex flex-col gap-1.5">
           {[
-            { name: "Riya", sub: "USDC · Base", amt: "−₹500", out: true },
-            { name: "Landlord", sub: "Autopay · USDT", amt: "−₹16,640", out: true },
-            { name: "Logo design", sub: "Payment link", amt: "+₹250", out: false },
+            { name: "Riya", sub: "USDC · Base", amt: "−$25", out: true },
+            { name: "Landlord", sub: "Autopay · USDT", amt: "−$200", out: true },
+            { name: "Logo design", sub: "Payment link", amt: "+$30", out: false },
           ].map((r, i) => (
             <Reveal key={r.name} delay={600 + i * 180} as="li" className="flex items-center gap-2 rounded-2xl bg-white/[0.06] p-2">
               <span className={`grid h-7 w-7 place-items-center rounded-full ${r.out ? "border border-white/25" : "bg-brand text-brand-ink"}`}>
@@ -201,7 +201,7 @@ function HowItWorks() {
               </span>
             </span>
             <span className="flex-1">
-              <span className="block text-sm font-semibold">0.6942 ZEC</span>
+              <span className="block text-sm font-semibold">1.7026 ZEC</span>
               <span className="flex items-center gap-1 text-xs text-snow/60">
                 <EyeOff size={12} aria-hidden="true" /> Hidden from the public
               </span>
@@ -215,7 +215,7 @@ function HowItWorks() {
           <div className="mt-6 flex items-center gap-3">
             <div className="flex flex-col items-center gap-1.5">
               <CoinBadge coinKey="zec" size={44} />
-              <span className="tabular text-[11px] font-semibold">0.0073 ZEC</span>
+              <span className="tabular text-[11px] font-semibold">0.0337 ZEC</span>
             </div>
             <div className="relative h-0 flex-1 -translate-y-3 border-t-2 border-dashed border-white/20" aria-hidden="true">
               {[0, 0.7, 1.4].map((d) => (
@@ -225,18 +225,18 @@ function HowItWorks() {
             </div>
             <div className="flex flex-col items-center gap-1.5">
               <CoinBadge coinKey="usdc-base" size={44} />
-              <span className="tabular text-[11px] font-semibold">5.41 USDC</span>
+              <span className="tabular text-[11px] font-semibold">24.85 USDC</span>
             </div>
           </div>
         </Reveal>
 
         <Reveal delay={160} className="panel-hero overflow-hidden p-5">
-          <Step n="03" title="Track every rupee" body="Each payment gets a receipt: what they got, what it cost you in ZEC, the rate and fees. Export it any time." />
+          <Step n="03" title="Track every dollar" body="Each payment gets a receipt: what they got, what it cost you in ZEC, the rate and fees. Export it any time." />
           <div className="relative mt-5 h-[150px]">
             {[
-              { t: "Riya", a: "₹500.00", tag: "ZEC → USDC", c: "bg-tint-1" },
-              { t: "Landlord", a: "₹16,640", tag: "ZEC → USDT", c: "bg-tint-2" },
-              { t: "Coffee shop", a: "₹296.00", tag: "ZEC → USDC", c: "bg-tint-3" },
+              { t: "Riya", a: "$25.00", tag: "ZEC → USDC", c: "bg-tint-1" },
+              { t: "Landlord", a: "$200.00", tag: "ZEC → USDT", c: "bg-tint-2" },
+              { t: "Coffee shop", a: "$3.50", tag: "ZEC → USDC", c: "bg-tint-3" },
             ].map((r, i) => (
               <div
                 key={r.t}
@@ -284,13 +284,13 @@ function SlideDemo() {
             <span>Riya gets</span>
           </div>
           <div className="tabular mt-1 flex items-center justify-between text-xl font-semibold">
-            <span>₹500</span>
+            <span>$25</span>
             <ArrowRight size={16} className="text-brand-ink/50" aria-hidden="true" />
-            <span>5.41 USDC</span>
+            <span>24.85 USDC</span>
           </div>
           <div className="mt-3 flex justify-between border-t border-brand-ink/10 pt-3 text-[12px]">
             <span className="text-brand-ink/60">Fee</span>
-            <span className="font-semibold">≈ ₹3</span>
+            <span className="font-semibold">≈ $0.15</span>
           </div>
         </div>
         <div className="relative mx-auto mt-5 flex h-[64px] w-[300px] max-w-full items-center rounded-full bg-[#1b241d] p-1.5" aria-hidden="true" style={v({ "--travel": "232px" })}>
@@ -298,7 +298,7 @@ function SlideDemo() {
           <span className="demo-knob relative z-10 grid h-[52px] w-[52px] place-items-center rounded-full bg-brand text-brand-ink">
             <ArrowRight size={20} />
           </span>
-          <span className="demo-label absolute inset-0 flex items-center justify-center pl-12 text-sm font-medium text-snow/85">Slide to pay ₹500</span>
+          <span className="demo-label absolute inset-0 flex items-center justify-center pl-12 text-sm font-medium text-snow/85">Slide to pay $25</span>
           <span className="demo-done absolute inset-0 flex items-center justify-center gap-2 text-sm font-semibold text-brand">
             <Check size={18} /> Paid
           </span>
@@ -335,7 +335,7 @@ function Features() {
           <Sparkles size={16} aria-hidden="true" /> Ask Zorro
         </span>
         <p className="mt-3 min-h-[3.2em] text-[19px] leading-snug font-medium">
-          <Typewriter text="Pay Riya ₹500 in USDC every Friday" />
+          <Typewriter text="Pay Riya $25 in USDC every Friday" />
         </p>
         <div className="mt-3 flex items-center gap-2 text-xs text-snow/60">
           <Check size={14} className="text-brand" aria-hidden="true" /> AI drafts it. You confirm it. Nothing moves until you do.
@@ -512,7 +512,7 @@ function FinalCta() {
             {hasWallet ? "Open Zorro" : "Create your wallet"} <ArrowRight size={17} aria-hidden="true" />
           </Link>
         ) : (
-          <PasskeyGate title="Start with a passkey" />
+          <PasskeyGate title="Get started in seconds" />
         )}
       </Reveal>
       <footer className="mt-14 flex flex-col items-center gap-1 text-center text-[11px] text-snow/40">

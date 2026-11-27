@@ -2,7 +2,6 @@
 // - ZEC/USD spot comes from NEAR Intents 1Click, the venue orders execute on,
 //   so what the user sees matches what triggers use. CoinGecko is the fallback.
 // - 24h change and chart history come from CoinGecko.
-// - USD/INR comes from Frankfurter (ECB reference rates).
 
 import { cacheLife } from "next/cache";
 import { getTokens } from "./oneclick";
@@ -10,7 +9,6 @@ import { ZEC } from "./assets";
 
 export type Spot = {
   zecUsd: number;
-  usdInr: number;
   change24hPct: number | null;
   source: "near-intents" | "coingecko";
   updatedAt: string;
@@ -25,20 +23,17 @@ async function fetchJson(url: string): Promise<unknown> {
   return res.json();
 }
 
-type CoinGeckoSimple = { zcash?: { usd?: number; usd_24h_change?: number; inr?: number } };
+type CoinGeckoSimple = { zcash?: { usd?: number; usd_24h_change?: number } };
 
 export async function getSpot(): Promise<Spot> {
   "use cache";
   cacheLife({ stale: 15, revalidate: 15, expire: 120 });
 
-  const [tokens, gecko, fx] = await Promise.allSettled([
+  const [tokens, gecko] = await Promise.allSettled([
     getTokens(),
     fetchJson(
-      "https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=usd,inr&include_24hr_change=true",
+      "https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=usd&include_24hr_change=true",
     ) as Promise<CoinGeckoSimple>,
-    fetchJson("https://api.frankfurter.dev/v1/latest?base=USD&symbols=INR") as Promise<{
-      rates?: { INR?: number };
-    }>,
   ]);
 
   const zecToken =
@@ -60,12 +55,8 @@ export async function getSpot(): Promise<Spot> {
     throw new Error("No ZEC price source available");
   }
 
-  let usdInr = fx.status === "fulfilled" ? fx.value.rates?.INR : undefined;
-  if (!usdInr && geckoZec?.inr && geckoZec.usd) usdInr = geckoZec.inr / geckoZec.usd;
-
   return {
     zecUsd,
-    usdInr: usdInr ?? 0,
     change24hPct: geckoZec?.usd_24h_change ?? null,
     source,
     updatedAt,

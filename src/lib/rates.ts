@@ -1,5 +1,5 @@
 // Prices for payments: every coin's USD price from NEAR Intents (the venue that converts it)
-// and USD→INR. Cached in memory for a minute. Works in the web app and the worker alike.
+// and USD→INR (only to run Autopays saved in INR by older versions). Cached in memory for a minute. Works in the web app and the worker alike.
 
 import { tokens } from "./agent-api";
 import { COINS, type Coin } from "./coins";

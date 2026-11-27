@@ -4,9 +4,6 @@
 
 import { useSyncExternalStore } from "react";
 
-export type Currency = "INR" | "USD";
-
-const CURRENCY_KEY = "zorro.currency";
 const DEVICE_KEY = "zorro.deviceId";
 const listeners = new Set<() => void>();
 
@@ -17,20 +14,6 @@ function subscribe(callback: () => void) {
     listeners.delete(callback);
     window.removeEventListener("storage", callback);
   };
-}
-
-function readCurrency(): Currency {
-  return localStorage.getItem(CURRENCY_KEY) === "USD" ? "USD" : "INR";
-}
-
-/** Display currency (INR or USD). Defaults to INR. */
-export function useCurrency(): [Currency, (next: Currency) => void] {
-  const currency = useSyncExternalStore(subscribe, readCurrency, () => "INR" as Currency);
-  const setCurrency = (next: Currency) => {
-    localStorage.setItem(CURRENCY_KEY, next);
-    listeners.forEach((l) => l());
-  };
-  return [currency, setCurrency];
 }
 
 /**

@@ -87,7 +87,6 @@ export function SwapFlow() {
   const f = coin(from);
   const t = coin(to);
   const have = balances?.coins.find((c) => c.key === from)?.amount ?? "0";
-  const inrPerUsd = q && q.usd > 0 ? q.inr / q.usd : null;
 
   function flip() {
     setFrom(to);
@@ -128,7 +127,7 @@ export function SwapFlow() {
             />
             <Dropdown label="Swap from" variant="light" value={from} onChange={(v) => (v === to ? flip() : setFrom(v))} options={COIN_OPTIONS} className="w-[132px] shrink-0" />
           </div>
-          <p className="tabular mt-1 text-xs font-medium text-brand-ink/55">{q ? fmt(q.usd, q.inr) : " "}</p>
+          <p className="tabular mt-1 text-xs font-medium text-brand-ink/55">{q ? fmt(q.usd) : " "}</p>
         </div>
 
         <div className="relative z-10 -my-3 flex justify-center">
@@ -145,7 +144,7 @@ export function SwapFlow() {
           </div>
           <dl className="tabular mt-4 space-y-2.5 border-t border-dashed border-brand-ink/15 pt-3.5 text-[13px]">
             <Row label="Rate">{q ? `1 ${f.symbol} = ${displayAmount(q.rate)} ${t.symbol}` : "—"}</Row>
-            <Row label="Fee">{q ? (q.feeUsd === null ? "Included" : `≈ ${fmt(q.feeUsd, inrPerUsd ? q.feeUsd * inrPerUsd : null)}`) : "—"}</Row>
+            <Row label="Fee">{q ? (q.feeUsd === null ? "Included" : `≈ ${fmt(q.feeUsd)}`) : "—"}</Row>
             <Row label="You get at least">{q ? `${displayAmount(q.minToAmount)} ${t.symbol}` : "—"}</Row>
           </dl>
         </div>

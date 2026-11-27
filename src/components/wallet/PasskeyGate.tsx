@@ -1,8 +1,8 @@
 "use client";
 
 import { Fingerprint, KeyRound } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
-import { createPasskey, passkeyBlocker, signInWithPasskey } from "@/lib/account-client";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPasskey, passkeyBlocker, signInWithPasskey, warmPasskeys } from "@/lib/account-client";
 
 const noSubscribe = () => () => {};
 
@@ -12,11 +12,21 @@ export function PasskeyGate({ title = "Create your Zorro passkey" }: { title?: s
   const [busy, setBusy] = useState<"create" | "signin" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Have the passkey options ready before the tap, and keep them fresh while this card is open.
+  useEffect(() => {
+    if (passkeyBlocker()) return;
+    void warmPasskeys();
+    const timer = setInterval(() => void warmPasskeys(), 3 * 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   async function run(kind: "create" | "signin") {
+    // Start the passkey prompt first (synchronously in the tap), then update the UI.
+    const pending = kind === "create" ? createPasskey() : signInWithPasskey();
     setBusy(kind);
     setError(null);
     try {
-      await (kind === "create" ? createPasskey() : signInWithPasskey());
+      await pending;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Passkey failed");
     } finally {
@@ -33,8 +43,8 @@ export function PasskeyGate({ title = "Create your Zorro passkey" }: { title?: s
         {title}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Your passkey is your Zorro account: Face ID, fingerprint or your device PIN. No email, password or seed
-        phrase. It also owns your wallet and approves every payee, so keep it on a device you trust.
+        Use Face ID, your fingerprint or your phone&apos;s PIN. No email, password or seed phrase, and only you can
+        approve where your money goes.
       </p>
 
       {blocker ? (
@@ -43,11 +53,11 @@ export function PasskeyGate({ title = "Create your Zorro passkey" }: { title?: s
         <div className="mt-5 flex flex-col gap-2.5">
           <button type="button" onClick={() => run("create")} disabled={busy !== null} className="btn-primary w-full">
             <Fingerprint size={17} aria-hidden="true" />
-            {busy === "create" ? "Waiting for your passkey…" : "Create passkey"}
+            {busy === "create" ? "Waiting for Face ID…" : "Continue with Face ID"}
           </button>
           <button type="button" onClick={() => run("signin")} disabled={busy !== null} className="btn-secondary w-full">
             <KeyRound size={16} aria-hidden="true" />
-            {busy === "signin" ? "Waiting for your passkey…" : "I already have one: sign in"}
+            {busy === "signin" ? "Waiting for Face ID…" : "I already have an account"}
           </button>
         </div>
       )}

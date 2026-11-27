@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, Pause, Play, Plus, Trash2, Zap } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAccount } from "@/lib/account-client";
-import { useCurrency } from "@/lib/client-prefs";
 import { coin, displayAmount } from "@/lib/coins";
 import { WEEKDAYS, amountLabel, describeSchedule, ordinal } from "@/lib/schedule-format";
 import type { PayeeView } from "@/lib/payees";
@@ -68,7 +67,6 @@ export function AutopayManager() {
 
   const approved = payees?.filter((p) => p.status === "approved") ?? [];
   const monthlyUsd = (schedules ?? []).filter((s) => s.status === "active").reduce((sum, s) => sum + (s.estimate ? (s.frequency === "weekly" ? s.estimate.usd * 4.35 : s.estimate.usd) : 0), 0);
-  const monthlyInr = (schedules ?? []).filter((s) => s.status === "active").reduce((sum, s) => sum + (s.estimate ? (s.frequency === "weekly" ? s.estimate.inr * 4.35 : s.estimate.inr) : 0), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -77,7 +75,7 @@ export function AutopayManager() {
       {schedules && schedules.length > 0 && (
         <section className="glass-card p-5">
           <p className="text-sm font-medium text-brand-ink/70">Autopay each month</p>
-          <p className="tabular mt-1 text-[32px] leading-tight font-semibold tracking-[-0.03em]">≈ {fmt(monthlyUsd, monthlyInr)}</p>
+          <p className="tabular mt-1 text-[32px] leading-tight font-semibold tracking-[-0.03em]">≈ {fmt(monthlyUsd)}</p>
           <p className="mt-1 text-xs text-brand-ink/70">
             {schedules.filter((s) => s.status === "active").length} active · runs at 9:00 AM IST · converted from ZEC on the day
           </p>
@@ -168,12 +166,11 @@ function SmallButton({ onClick, icon, label, danger }: { onClick: () => void; ic
 type Initial = { amount: string; currency: string | null; frequency: string | null; day: string | null; note: string };
 
 function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView[]; preselect: string | null; initial: Initial; onDone: (created: boolean) => void }) {
-  const [pref] = useCurrency();
   const [picked, setPayeeId] = useState<string | null>(null);
   // Payees can arrive after the form opens: fall back to the requested one, then the first.
   const payeeId = picked ?? (preselect && payees.some((p) => p.id === preselect) ? preselect : (payees[0]?.id ?? ""));
   const [amount, setAmount] = useState(initial.amount);
-  const [currency, setCurrency] = useState<"INR" | "USD" | "COIN">(initial.currency === "INR" || initial.currency === "USD" || initial.currency === "COIN" ? initial.currency : pref);
+  const [currency, setCurrency] = useState<"USD" | "COIN">(initial.currency === "COIN" ? "COIN" : "USD");
   const [frequency, setFrequency] = useState<"monthly" | "weekly">(initial.frequency === "weekly" ? "weekly" : "monthly");
   const [day, setDay] = useState(initial.day !== null && /^\d+$/.test(initial.day) ? Number(initial.day) : 1);
   const [note, setNote] = useState(initial.note);
@@ -239,7 +236,6 @@ function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView
             value={currency}
             onChange={setCurrency}
             options={[
-              { value: "INR", label: "₹ INR" },
               { value: "USD", label: "$ USD" },
               { value: "COIN", label: payee ? coin(payee.coinKey).symbol : "Coin" },
             ]}

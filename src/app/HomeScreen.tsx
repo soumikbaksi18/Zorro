@@ -142,10 +142,10 @@ const ASSET_BOXES: { symbol: string; keys: string[]; always: boolean }[] = [
 ];
 
 function Balance({ data, error }: { data: HomeData | null; error: string | null }) {
-  const { currency, fmt } = useFiat();
+  const { fmt } = useFiat();
   const [hidden, toggle] = useHideBalance();
   const b = data?.balances;
-  const total = b ? (currency === "INR" ? b.totalInr : b.totalUsd) : null;
+  const total = b ? b.totalUsd : null;
   const zec = b?.coins.find((c) => c.key === "zec");
   const boxes = ASSET_BOXES.map((box) => {
     const held = (b?.coins ?? []).filter((c) => box.keys.includes(c.key));
@@ -154,7 +154,6 @@ function Balance({ data, error }: { data: HomeData | null; error: string | null 
       ...box,
       amount,
       usd: held.reduce((s, c) => s + (c.usd ?? 0), 0),
-      inr: held.reduce((s, c) => s + (c.inr ?? 0), 0),
       // the chain holding most of it, so Swap / Add money open on the right coin
       key: held.sort((x, y) => Number(y.amount) - Number(x.amount))[0]?.key ?? box.keys[0],
     };
@@ -176,12 +175,12 @@ function Balance({ data, error }: { data: HomeData | null; error: string | null 
         </div>
         <div className="relative">
           <p className="text-[40px] leading-tight font-semibold">
-            {total === null ? <span className="inline-block h-10 w-44 animate-pulse rounded-xl bg-white/40 align-middle" /> : <BigFiat value={total} currency={currency} hidden={hidden} dim="text-brand-ink/45" />}
+            {total === null ? <span className="inline-block h-10 w-44 animate-pulse rounded-xl bg-white/40 align-middle" /> : <BigFiat value={total} hidden={hidden} dim="text-brand-ink/45" />}
           </p>
           {error && !b && <p className="mt-1 text-sm text-down">{error}</p>}
           <p className="tabular mt-1 text-sm font-medium text-brand-ink/70">
-            {zec && !hidden ? `${Number(zec.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ZEC` : currency === "INR" ? "Indian Rupee" : "US Dollar"}
-            {b?.zecUsd ? ` · 1 ZEC = ${fmt(b.zecUsd, b.zecUsd * b.usdInr)}` : ""}
+            {zec && !hidden ? `${Number(zec.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ZEC` : "US Dollar"}
+            {b?.zecUsd ? ` · 1 ZEC = ${fmt(b.zecUsd)}` : ""}
           </p>
         </div>
       </article>
@@ -200,7 +199,7 @@ function Balance({ data, error }: { data: HomeData | null; error: string | null 
             </span>
             <span>
               <span className="tabular block truncate text-[19px] leading-tight font-semibold tracking-[-0.02em]">
-                {!b ? "…" : hidden ? "••••" : fmt(box.usd, box.inr)}
+                {!b ? "…" : hidden ? "••••" : fmt(box.usd)}
               </span>
               <span className="tabular mt-0.5 block truncate text-[11px] text-snow/55">
                 {!b ? "" : hidden ? "••••" : `${box.amount.toLocaleString("en-US", { maximumFractionDigits: box.symbol === "BTC" ? 8 : 6 })} ${box.symbol}`}
@@ -301,7 +300,7 @@ export function PaymentRow({ p, highlight = false }: { p: PaymentView; highlight
       <span className="text-right">
         <strong className={`tabular block text-[15px] font-semibold ${p.status === "failed" ? "text-dim line-through" : out ? "" : "text-brand"}`}>
           {out ? "−" : "+"}
-          {fmt(p.usd, p.inr)}
+          {fmt(p.usd)}
         </strong>
         <span className="tabular block text-xs text-snow/55">
           {Number(p.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {c?.symbol}

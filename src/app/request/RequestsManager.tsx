@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { HandCoins, Share2, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAccount } from "@/lib/account-client";
-import { useCurrency } from "@/lib/client-prefs";
 import type { RequestView } from "@/lib/requests";
 import { StatusBadge, useNow, when } from "@/components/money";
 import { CopyButton, ErrorBox, QrCode, Segmented } from "@/components/ui";
@@ -15,16 +14,15 @@ const noSubscribe = () => () => {};
 const useOrigin = () => useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
 
 export const requestAmount = (r: { amount: string; currency: string }) =>
-  r.currency === "INR" ? `₹${Number(r.amount).toLocaleString("en-IN")}` : r.currency === "USD" ? `$${Number(r.amount).toLocaleString("en-US")}` : `${r.amount} ZEC`;
+  r.currency === "INR" ? `${Number(r.amount).toLocaleString("en-US")} INR` : r.currency === "USD" ? `$${Number(r.amount).toLocaleString("en-US")}` : `${r.amount} ZEC`;
 
 export function RequestsManager() {
   const account = useAccount();
-  const [pref] = useCurrency();
   const origin = useOrigin();
   const now = useNow();
   const [requests, setRequests] = useState<RequestView[] | null>(null);
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState<"INR" | "USD" | "ZEC">(pref);
+  const [currency, setCurrency] = useState<"USD" | "ZEC">("USD");
   const [note, setNote] = useState("");
   const [created, setCreated] = useState<RequestView | null>(null);
   const [busy, setBusy] = useState(false);
@@ -121,7 +119,6 @@ export function RequestsManager() {
             value={currency}
             onChange={setCurrency}
             options={[
-              { value: "INR", label: "₹ INR" },
               { value: "USD", label: "$ USD" },
               { value: "ZEC", label: "ZEC" },
             ]}

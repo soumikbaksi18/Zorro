@@ -52,12 +52,12 @@ const RawAction = z.discriminatedUnion("type", [
   z.object({ type: z.literal("balances") }),
   z.object({ type: z.literal("news") }),
   z.object({ type: z.literal("open"), screen: z.enum(Object.keys(SCREENS) as [keyof typeof SCREENS, ...(keyof typeof SCREENS)[]]) }),
-  z.object({ type: z.literal("pay"), payee: z.string().min(1), amount: z.union([z.string(), z.number()]).transform(String), currency: z.enum(["INR", "USD", "COIN"]) }),
+  z.object({ type: z.literal("pay"), payee: z.string().min(1), amount: z.union([z.string(), z.number()]).transform(String), currency: z.enum(["USD", "COIN"]) }),
   z.object({
     type: z.literal("autopay"),
     payee: z.string().min(1),
     amount: z.union([z.string(), z.number()]).transform(String),
-    currency: z.enum(["INR", "USD", "COIN"]),
+    currency: z.enum(["USD", "COIN"]),
     frequency: z.enum(["weekly", "monthly"]),
     day: z.number().int(),
   }),
@@ -84,10 +84,10 @@ export type ChatTurn = { role: "user" | "assistant"; content: string };
 // ---------- What the assistant knows ----------
 
 const APP_GUIDE = `ABOUT ZORRO (the app you live in)
-- Zorro is a phone-first private payments wallet for Zcash (ZEC), on NEAR Intents, with amounts shown in INR or USD. Users hold ZEC and pay anyone in the coin they want; Zorro converts at the moment of paying.
+- Zorro is a phone-first private payments wallet for Zcash (ZEC), on NEAR Intents, with amounts shown in US dollars (USD). Users hold ZEC and pay anyone in the coin they want; Zorro converts at the moment of paying.
 - Wallet: created with one passkey (Face ID / fingerprint), no seed phrase. It is a NEAR Intents account with a confidential (private) balance that can hold 13 coins on 8 chains: ZEC, USDC (Base, Solana, Ethereum, Arbitrum), USDT (Tron, Ethereum, Solana), SOL, ETH (Ethereum, Base), BTC, NEAR.
 - Safety: Zorro's server holds a payment permission. With it, Zorro can pay ONLY payees the user approved with their passkey, and only up to the daily USD limit they signed, without asking again (that's how Autopay works). It can't add payees, raise the limit or send anywhere else without the user's passkey; NEAR Intents enforces this. So a hacked server could at worst pay approved payees up to the daily limit. Adding payees: Payees screen, then "Approve with Face ID" (one signature approves all waiting payees; NEAR Intents allows one rules change every 10 minutes).
-- Pay: choose a payee, type an amount in INR, USD or their coin, see what it costs in ZEC with fees, slide to pay. About 0.6% conversion fee plus a network fee. Zorro-to-Zorro payments to an @handle are instant, private, with no network fee.
+- Pay: choose a payee, type an amount in USD or in their coin, see what it costs in ZEC with fees, slide to pay. About 0.6% conversion fee plus a network fee. Zorro-to-Zorro payments to an @handle are instant, private, with no network fee.
 - Swap: convert inside the wallet (e.g. ZEC to USDC, SOL, ETH) with 1% max slippage; it stays in the wallet.
 - Autopay: weekly or monthly payments at 9:00 AM IST, converted from ZEC on the day; skipped runs show in the Tracker.
 - Request money: a payment link anyone can pay in any of the 13 coins; it arrives as ZEC.
@@ -105,7 +105,7 @@ async function buildContext(user: CurrentUser): Promise<{ text: string; balances
   lines.push(`Today (India): ${now.toUTCString().slice(0, 22)} IST. The user's handle: ${user.handle ? `@${user.handle}` : "not set"}.`);
 
   const rates = await getRates().catch(() => null);
-  if (rates) lines.push(`ZEC price now: $${rates.zecUsd.toFixed(2)} (₹${(rates.zecUsd * rates.usdInr).toFixed(0)}). 1 USD = ₹${rates.usdInr.toFixed(2)}.`);
+  if (rates) lines.push(`ZEC price now: $${rates.zecUsd.toFixed(2)}.`);
 
   const agent = await activeAgentFor(user.id);
   let balances: WalletBalances | null = null;
@@ -120,7 +120,7 @@ async function buildContext(user: CurrentUser): Promise<{ text: string; balances
     ]);
     balances = b;
     if (b) {
-      lines.push(`Wallet balances (total ≈ $${b.totalUsd.toFixed(2)} / ₹${b.totalInr.toFixed(0)}): ${b.coins.map((c) => `${c.amount} ${c.symbol}${c.chainName !== c.symbol && c.symbol !== "ZEC" ? ` on ${c.chainName}` : ""} (≈ $${(c.usd ?? 0).toFixed(2)})`).join("; ")}.`);
+      lines.push(`Wallet balances (total ≈ $${b.totalUsd.toFixed(2)}): ${b.coins.map((c) => `${c.amount} ${c.symbol}${c.chainName !== c.symbol && c.symbol !== "ZEC" ? ` on ${c.chainName}` : ""} (≈ $${(c.usd ?? 0).toFixed(2)})`).join("; ")}.`);
       if (b.limit?.limitUsd) lines.push(`Daily limit: $${b.limit.limitUsd}, used today $${Number(b.limit.spentUsd ?? 0).toFixed(2)}.`);
     }
     const approved = payees.filter((p) => p.status === "approved");
@@ -133,7 +133,7 @@ async function buildContext(user: CurrentUser): Promise<{ text: string; balances
     if (payments.length) {
       lines.push(
         `Recent activity: ${payments
-          .map((p) => `${p.createdAt.slice(0, 10)} ${p.kind === "swap" ? "swapped" : p.direction === "out" ? "paid" : "received"} ${p.counterparty}: ${p.amount} ${coin(p.coinKey).symbol}${p.inr ? ` (₹${p.inr.toFixed(0)})` : ""} [${p.status}]`)
+          .map((p) => `${p.createdAt.slice(0, 10)} ${p.kind === "swap" ? "swapped" : p.direction === "out" ? "paid" : "received"} ${p.counterparty}: ${p.amount} ${coin(p.coinKey).symbol}${p.usd ? ` ($${p.usd.toFixed(2)})` : ""} [${p.status}]`)
           .join("; ")}.`,
       );
     }
@@ -158,6 +158,7 @@ RULES
 - This is often spoken aloud: keep replies to 1-4 short sentences unless the user asks for detail. No markdown tables.
 - Use only the USER CONTEXT for balances, payees, payments and prices. Never invent numbers. If something isn't there, say so.
 - You cannot move money. To help the user do something, add an action; the app shows a card with a "Review & confirm" button that opens the pre-filled screen (payments and swaps are then confirmed with "slide to pay/swap"; Autopay with "Start Autopay"). Don't promise anything happened.
+- Money amounts: always in US dollars ($) or the coin itself. Never use rupees or other fiat currencies; if the user gives an amount in another currency, ask for it in USD or in the coin.
 - No investment advice or price predictions. You may describe recent price moves and news.
 - Never ask for, guess or repeat seed phrases, private keys or addresses.
 
@@ -165,8 +166,8 @@ ACTIONS (0-3 per answer; only when useful)
 {"type":"chart","asset":"ZEC|BTC|ETH|SOL|NEAR","range":"1d|7d|30d|90d"}  for price, trend or "show me a graph"
 {"type":"balances"}  for "what's my balance" / holdings
 {"type":"news"}  for latest Zcash news
-{"type":"pay","payee":"<exact approved payee name>","amount":"500","currency":"INR|USD|COIN"}
-{"type":"autopay","payee":"<exact approved payee name>","amount":"15000","currency":"INR|USD|COIN","frequency":"weekly|monthly","day":1}  (weekly day 0=Sunday…6=Saturday; monthly 1-28)
+{"type":"pay","payee":"<exact approved payee name>","amount":"25","currency":"USD|COIN"}
+{"type":"autopay","payee":"<exact approved payee name>","amount":"200","currency":"USD|COIN","frequency":"weekly|monthly","day":1}  (weekly day 0=Sunday…6=Saturday; monthly 1-28)
 {"type":"swap","from":"<coin key>","to":"<coin key>","amount":"0.1"}  (amount in the "from" coin; coin keys: ${COINS.map((c) => c.key).join(", ")}; plain "USDC" means usdc-base)
 {"type":"open","screen":"${Object.keys(SCREENS).join("|")}"}
 If the user wants to pay someone who isn't an approved payee, explain they must add and approve them first, and add {"type":"open","screen":"payees"}.

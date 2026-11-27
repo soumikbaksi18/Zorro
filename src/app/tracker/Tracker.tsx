@@ -8,14 +8,13 @@ import { coin, displayAmount } from "@/lib/coins";
 import type { MonthSummary, PaymentView } from "@/lib/payments";
 import { CoinBadge, StatusBadge, coinName, useFiat, useNow } from "@/components/money";
 import { SpendChart } from "@/components/SpendChart";
-import { formatFiat } from "@/lib/format";
+import { formatUsd } from "@/lib/format";
 import { ErrorBox } from "@/components/ui";
 import { PasskeyGate } from "@/components/wallet/PasskeyGate";
 
 type Data = {
   summary: MonthSummary;
   payments: PaymentView[];
-  usdInr: number | null;
   today: { limitUsd: string | null; spentUsd: string | null; resetsAt: string | null } | null;
 };
 type Filter = "all" | "sent" | "received" | "autopay" | "open";
@@ -34,7 +33,7 @@ export function Tracker() {
   const [filter, setFilter] = useState<Filter>("all");
   const [shown, setShown] = useState(20);
   const [mode, setMode] = useState<"out" | "in">("out");
-  const { fmt, currency } = useFiat();
+  const { fmt } = useFiat();
   const now = useNow();
   const hasWallet = account.status === "ready" && account.me.agent?.status === "ACTIVE";
 
@@ -60,7 +59,6 @@ export function Tracker() {
   if (!data) return <TrackerSkeleton />;
 
   const { summary, today } = data;
-  const inr = (usd: number) => (data.usdInr ? usd * data.usdInr : null);
   const limit = Number(today?.limitUsd ?? 0);
   const spentToday = Number(today?.spentUsd ?? 0);
   const monthName = new Date(`${summary.month}-01T00:00:00Z`).toLocaleDateString("en-IN", { month: "long" });
@@ -76,11 +74,11 @@ export function Tracker() {
           {mode === "out" ? `Spent in ${monthName}` : `Received in ${monthName}`}
         </p>
         <p className="tabular mt-1 text-center text-[34px] leading-tight font-semibold tracking-[-0.03em]">
-          {mode === "out" ? fmt(summary.sentUsd, summary.sentInr) : fmt(summary.receivedUsd, summary.receivedInr)}
+          {mode === "out" ? fmt(summary.sentUsd) : fmt(summary.receivedUsd)}
         </p>
         <div className="mt-4">
           {now ? (
-            <SpendChart payments={data.payments} mode={mode} now={now} currency={currency} format={(v) => formatFiat(v, currency, { compact: true })} />
+            <SpendChart payments={data.payments} mode={mode} now={now} format={(v) => formatUsd(v, { compact: true })} />
           ) : (
             <div className="h-[170px] animate-pulse rounded-2xl bg-white/5" />
           )}
@@ -109,8 +107,8 @@ export function Tracker() {
         <StatCard title="ZEC spent" value={`${displayAmount(summary.zecSpent)} ZEC`} sub={`${summary.count} payments in ${monthName}`} />
         <StatCard
           title="Today's limit"
-          value={fmt(spentToday, inr(spentToday))}
-          sub={limit ? `of ${fmt(limit, inr(limit))}` : "No limit info"}
+          value={fmt(spentToday)}
+          sub={limit ? `of ${fmt(limit)}` : "No limit info"}
           pct={limit ? Math.min(100, (spentToday / limit) * 100) : undefined}
         />
       </div>
@@ -123,9 +121,9 @@ export function Tracker() {
           <span className="text-xs text-muted">{summary.count} done</span>
         </div>
         <dl className="tabular mt-4 grid grid-cols-3 gap-2 text-center">
-          <Mini label="Received" value={fmt(summary.receivedUsd, summary.receivedInr)} tone="up" />
-          <Mini label="Sent" value={fmt(summary.sentUsd, summary.sentInr)} />
-          <Mini label="Fees" value={fmt(summary.feesUsd, inr(summary.feesUsd))} />
+          <Mini label="Received" value={fmt(summary.receivedUsd)} tone="up" />
+          <Mini label="Sent" value={fmt(summary.sentUsd)} />
+          <Mini label="Fees" value={fmt(summary.feesUsd)} />
         </dl>
         {summary.byCoin.length > 0 && (
           <>
@@ -139,7 +137,7 @@ export function Tracker() {
                     <div className="min-w-0 flex-1">
                       <div className="flex justify-between text-sm">
                         <span>{coinName(coin(b.coinKey))}</span>
-                        <span className="tabular text-snow/80">{fmt(b.usd, inr(b.usd))}</span>
+                        <span className="tabular text-snow/80">{fmt(b.usd)}</span>
                       </div>
                       <div className="meter mt-1.5">
                         <span style={{ width: `${Math.max(3, pct)}%` }} />
@@ -198,7 +196,7 @@ function ReceiptCard({ p, shade }: { p: PaymentView; shade: number }) {
           <p className="truncate text-sm font-medium text-brand-ink/65">{out ? p.counterparty : `From ${p.counterparty}`}</p>
           <p className={`tabular mt-1 text-[34px] leading-tight font-semibold tracking-[-0.04em] ${p.status === "failed" ? "line-through opacity-50" : ""}`}>
             {out ? "" : "+"}
-            {fmt(p.usd, p.inr)}
+            {fmt(p.usd)}
           </p>
         </div>
         <span className="mt-1 shrink-0 text-[13px] font-medium text-brand-ink/60">{tag}</span>
