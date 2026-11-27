@@ -27,7 +27,7 @@ import type { PaymentView } from "@/lib/payments";
 import type { WalletBalances } from "@/lib/wallet-service";
 import { BigFiat, CoinBadge, coinName, useFiat, useNow, when } from "@/components/money";
 import { BrandMark } from "@/components/shell/Brand";
-import { PasskeyGate } from "@/components/wallet/PasskeyGate";
+import { Landing } from "@/components/landing/Landing";
 
 type HomeData = { balances: WalletBalances; recent: PaymentView[]; pendingPayees: number; handle: string | null };
 
@@ -69,7 +69,7 @@ export function HomeScreen() {
 
   if (account.status === "loading") return <HomeSkeleton />;
   if (account.status === "error") return <p className="panel p-5 text-sm text-muted">Couldn&apos;t load your account. Check your connection.</p>;
-  if (!account.me.user) return <Welcome />;
+  if (!account.me.user) return <Landing />;
 
   const handle = data?.handle ?? account.me.user.handle;
   return (
@@ -289,39 +289,6 @@ function CreateWalletCard({ pending }: { pending: boolean }) {
         {pending ? "Finish setting up" : "Create wallet"}
       </Link>
     </section>
-  );
-}
-
-function Welcome() {
-  return (
-    <div className="flex flex-col gap-7 pt-4">
-      <BrandMark size={56} />
-      <div>
-        <h2 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.04em]">
-          Private cash.
-          <br />
-          <span className="text-brand">Pay in any coin.</span>
-        </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-snow/70">
-          Hold ZEC and pay anyone, in USDC, SOL, BTC or whatever they want. Autopay your regular payments and track every one.
-        </p>
-      </div>
-      <ul className="flex flex-col gap-3 text-sm text-snow/80">
-        {[
-          "Pay people and apps in 13 coins across 8 chains",
-          "Autopay rent, family and freelancers",
-          "Every payee approved with your Face ID",
-        ].map((t) => (
-          <li key={t} className="flex items-center gap-3">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-brand/15 text-brand">
-              <ShieldCheck size={14} aria-hidden="true" />
-            </span>
-            {t}
-          </li>
-        ))}
-      </ul>
-      <PasskeyGate title="Start with a passkey" />
-    </div>
   );
 }
 

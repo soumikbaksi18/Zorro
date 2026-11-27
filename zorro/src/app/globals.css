@@ -387,6 +387,317 @@ body {
   }
 }
 
+/* ---------- Landing page motion ---------- */
+
+/* Scroll reveal: hidden only when scripts run (so nothing is lost without JS), shown once in view. */
+@media (scripting: enabled) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+    filter: blur(6px);
+    transition:
+      opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+      filter 0.7s;
+    transition-delay: var(--d, 0ms);
+  }
+  .reveal[data-shown="true"] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translateY(-10px) rotate(var(--r, 0deg));
+  }
+}
+.anim-float {
+  animation: float 5s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+/* Headline word rotator: 4 words + the first repeated, so the loop is seamless. */
+@keyframes rotate-words {
+  0%,
+  18% {
+    transform: translateY(0);
+  }
+  25%,
+  43% {
+    transform: translateY(-1.15em);
+  }
+  50%,
+  68% {
+    transform: translateY(-2.3em);
+  }
+  75%,
+  93% {
+    transform: translateY(-3.45em);
+  }
+  100% {
+    transform: translateY(-4.6em);
+  }
+}
+.word-rotator {
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.word-rotator > span {
+  display: flex;
+  flex-direction: column;
+  animation: rotate-words 9s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+}
+.word-rotator > span > span {
+  height: 1.15em;
+  line-height: 1.15em;
+}
+
+/* Coins orbiting the phone. */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--rad, 150px)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--rad, 150px)) rotate(-360deg);
+  }
+}
+.anim-orbit {
+  animation: orbit var(--t, 18s) linear infinite;
+  animation-delay: var(--d, 0s);
+}
+
+/* Infinite ticker. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.anim-marquee {
+  animation: marquee 28s linear infinite;
+}
+.anim-marquee-reverse {
+  animation: marquee 32s linear infinite reverse;
+}
+
+/* A dot travelling along the ZEC → coin path. */
+@keyframes travel {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+.anim-travel {
+  animation: travel 2.2s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+/* Self-playing slide-to-pay demo (5s loop): slide, hold, done, reset. */
+@keyframes demo-knob {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  45%,
+  80% {
+    transform: translateX(var(--travel, 210px));
+  }
+  92%,
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes demo-fill {
+  0%,
+  12% {
+    width: 56px;
+  }
+  45%,
+  80% {
+    width: 100%;
+  }
+  92%,
+  100% {
+    width: 56px;
+  }
+}
+@keyframes demo-done {
+  0%,
+  44% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  88%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes demo-label {
+  0%,
+  20% {
+    opacity: 1;
+  }
+  30%,
+  85% {
+    opacity: 0;
+  }
+  95%,
+  100% {
+    opacity: 1;
+  }
+}
+.demo-knob {
+  animation: demo-knob 5s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+.demo-fill {
+  animation: demo-fill 5s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+.demo-done {
+  animation: demo-done 5s ease infinite;
+}
+.demo-label {
+  animation: demo-label 5s ease infinite;
+}
+
+/* Receipts dropping onto a stack (when its section is in view). */
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-36px) rotate(-3deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+[data-shown="true"] .anim-drop {
+  animation: drop-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1.2) both;
+  animation-delay: var(--d, 0s);
+}
+
+/* Scanner line. */
+@keyframes scan {
+  0%,
+  100% {
+    top: 12%;
+  }
+  50% {
+    top: 82%;
+  }
+}
+.anim-scan {
+  animation: scan 2.4s ease-in-out infinite;
+}
+
+/* Expanding rings (Face ID, live dot). */
+@keyframes ring {
+  from {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+.anim-ring {
+  animation: ring 2.2s ease-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.anim-spin-slow {
+  animation: spin-slow 9s linear infinite;
+}
+
+@keyframes flash {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+    filter: none;
+  }
+  75%,
+  85% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgb(184 243 107 / 0.9));
+  }
+}
+.anim-flash {
+  animation: flash 2.4s ease-in-out infinite;
+}
+
+/* Shimmer sweeping across a surface. */
+@keyframes shimmer {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+.anim-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: shimmer 3.2s ease-in-out infinite;
+}
+
+/* Blinking caret for the AI typing demo. */
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+.anim-caret {
+  animation: caret 1s steps(1) infinite;
+}
+
+/* Slow breathing glow behind the hero phone and the final button. */
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}
+.anim-glow {
+  animation: glow 6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -394,5 +705,10 @@ body {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
   }
 }

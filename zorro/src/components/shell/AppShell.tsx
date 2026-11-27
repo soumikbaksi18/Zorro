@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { TabBar, TabBarView } from "./Navigation";
+import { TabBar } from "./Navigation";
 
 /**
  * Phone layout on every screen size: one centred column with soft yellow light at the
@@ -23,7 +23,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <Suspense fallback={<TabBarView />}>
+      {/* No placeholder: the bar is fixed (no layout shift), and some pages hide it entirely. */}
+      <Suspense fallback={null}>
         <TabBar />
       </Suspense>
     </div>

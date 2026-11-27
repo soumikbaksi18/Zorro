@@ -22,6 +22,7 @@ Verified end to end on NEAR Intents mainnet with a virtual passkey (no money mov
 | Tracker: monthly totals, today's limit, where your ZEC went, stacked receipts, CSV export | Done |
 | Ask AI: plain words → drafted payment or Autopay, reviewed before anything moves | Done |
 | Zcash news + AI daily brief | Done |
+| Landing page (`/landing`, also Home when signed out): animated product walkthrough for phones, ending in passkey sign-up | Done |
 | Pay from another wallet (1Click, e.g. straight from Zashi) | Kept from v1 |
 
 Still to do: one small real payment (and a shielded `u1` delivery test), deployment with HTTPS and an always-on worker, demo video and the X post.

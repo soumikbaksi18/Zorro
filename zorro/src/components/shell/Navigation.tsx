@@ -1,14 +1,20 @@
 "use client";
 
-// Floating bottom bar. It reads the URL to highlight the current tab; TabBarView
-// without a pathname is the <Suspense> fallback while the URL streams in.
+// Floating bottom bar. It reads the URL to highlight the current tab and hides itself on
+// visitor pages (landing, public payment links).
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAccount } from "@/lib/account-client";
 import { PRIMARY_NAV, isActive } from "./nav";
 
 export function TabBar() {
-  return <TabBarView pathname={usePathname()} />;
+  const pathname = usePathname();
+  const account = useAccount();
+  // The landing page and public payment links are for visitors: no app navigation there.
+  const signedOutHome = pathname === "/" && account.status === "ready" && !account.me.user;
+  if (pathname === "/landing" || pathname.startsWith("/r/") || signedOutHome) return null;
+  return <TabBarView pathname={pathname} />;
 }
 
 export function TabBarView({ pathname }: { pathname?: string }) {
