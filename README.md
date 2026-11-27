@@ -226,3 +226,7 @@ Coin and network logos: [@web3icons/core](https://github.com/0xa3k5/web3icons) (
 ## History
 
 Zorro started as a ZEC trading-bot app (stop-loss, DCA, grid). After feedback from the Zcash community that the ecosystem sees ZEC as **private cash, not a trading asset**, it was rebuilt as a payments app. The bot code remains in git history. See [PLAN.md](PLAN.md) for the full design and decisions.
+
+## License
+
+[MIT](LICENSE) © 2026 soumikbaksi18. Coin and network logos keep their own MIT license (see `public/coins/CREDITS.txt`).
