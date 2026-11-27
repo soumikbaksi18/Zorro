@@ -137,10 +137,9 @@ turso db tokens create zorro # → a long token                    (DATABASE_AUT
 
 Or in the dashboard at https://app.turso.tech: **Create database**, then **Connect** shows the URL and lets you create a token.
 
-Create the tables once, from your computer:
+Create the tables once, from your computer (in the repo folder):
 
 ```bash
-cd zorro
 DATABASE_URL="libsql://zorro-<you>.turso.io" DATABASE_AUTH_TOKEN="<token>" npm run db:migrate
 # → "Database is up to date."
 ```
@@ -151,7 +150,7 @@ Run the same command again after any future schema change (new files in `drizzle
 
 1. Push the repo to GitHub (`.env.local` is git-ignored, so keys stay on your machine).
 2. On https://vercel.com: **Add New → Project → import the repo**.
-3. **Root Directory: `zorro`** (the app lives in that folder). Framework: Next.js (auto). Node 22 is picked from `package.json`.
+3. Keep the **Root Directory** as the repo root (the default). Framework: Next.js (auto). Node 22 is picked from `package.json`.
 4. **Environment Variables** (Production):
 
    | Name | Value |
