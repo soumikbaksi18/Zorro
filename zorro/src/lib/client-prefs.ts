@@ -50,3 +50,16 @@ function readOrCreateDeviceId(): string {
   }
   return id;
 }
+
+const HIDE_KEY = "zorro.hideBalance";
+const readHidden = () => localStorage.getItem(HIDE_KEY) === "1";
+
+/** Hide balances on screen (for using the app in public). */
+export function useHideBalance(): [boolean, () => void] {
+  const hidden = useSyncExternalStore(subscribe, readHidden, () => false);
+  const toggle = () => {
+    localStorage.setItem(HIDE_KEY, hidden ? "0" : "1");
+    listeners.forEach((l) => l());
+  };
+  return [hidden, toggle];
+}

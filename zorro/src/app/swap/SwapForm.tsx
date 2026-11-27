@@ -159,7 +159,7 @@ export function SwapForm() {
           />
         </Field>
 
-        <div className="panel p-4 focus-within:border-fox-light">
+        <div className="panel p-4 focus-within:border-zec-light">
           <p className="eyebrow">You send{origin === ZEC ? "" : ` · ${origin.chainName}`}</p>
           <div className="mt-1 flex items-center gap-3">
             <input
@@ -217,7 +217,7 @@ export function SwapForm() {
             type="checkbox"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-fox)]"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-zec)]"
           />
           <span>
             Share this swap&apos;s amount and addresses with <span className="text-snow">NEAR Intents</span> to get a

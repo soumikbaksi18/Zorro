@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import type { Check, HealthReport } from "@/lib/health";
 
 const ROWS: { key: keyof HealthReport["checks"]; label: string }[] = [
-  { key: "swaps", label: "Swaps (NEAR Intents)" },
-  { key: "agentApi", label: "Bot wallets (Agent API)" },
+  { key: "swaps", label: "Conversions (NEAR Intents)" },
+  { key: "agentApi", label: "Wallets (NEAR Intents Agent API)" },
   { key: "ai", label: "AI assistant" },
-  { key: "worker", label: "Bot worker" },
+  { key: "worker", label: "Payment worker (Autopay)" },
   { key: "database", label: "Database" },
   { key: "encryption", label: "Encryption" },
 ];
@@ -58,7 +58,7 @@ export function SystemStatus() {
           type="button"
           onClick={recheck}
           disabled={loading}
-          className="rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] uppercase hover:border-fox-light disabled:opacity-40"
+          className="rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] uppercase hover:border-zec-light disabled:opacity-40"
         >
           {loading ? "Checking…" : "Recheck"}
         </button>

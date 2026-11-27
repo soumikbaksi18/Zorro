@@ -61,7 +61,7 @@ export function SwapTracker({ id }: { id: string }) {
           Zorro keeps swaps on the device that created them.
           {live && <> NEAR Intents reports this swap as: <strong className="text-snow">{STATUS_LABEL[live.status]}</strong>.</>}
         </p>
-        <Link href="/orders" className="mt-4 inline-block text-sm font-medium text-fox-light">
+        <Link href="/orders" className="mt-4 inline-block text-sm font-medium text-zec-light">
           Go to your orders
         </Link>
       </div>
@@ -75,7 +75,7 @@ export function SwapTracker({ id }: { id: string }) {
   return (
     <>
       <header>
-        <Link href="/orders" className="eyebrow hover:text-fox-light">
+        <Link href="/orders" className="eyebrow hover:text-zec-light">
           ← Orders
         </Link>
         <h1 className="page-title mt-3">
@@ -125,7 +125,7 @@ export function SwapTracker({ id }: { id: string }) {
         <Result tone="good" title={`Received ${swap.receivedAmount ?? quote.receive.amount} ${quote.receive.symbol}`}>
           Sent to {shortAddress(swap.recipient)} on {quote.receive.chainName}.
           {swap.destinationTx?.url && (
-            <a href={swap.destinationTx.url} target="_blank" rel="noreferrer" className="mt-2 block font-medium text-fox-light">
+            <a href={swap.destinationTx.url} target="_blank" rel="noreferrer" className="mt-2 block font-medium text-zec-light">
               View transaction ↗
             </a>
           )}
@@ -173,7 +173,7 @@ function Steps({ step, failed }: { step: number; failed: boolean }) {
           <li key={label} className="flex-1">
             <div
               className={`h-1.5 rounded-full ${
-                done ? "bg-up" : current ? (failed && i === 2 ? "bg-down" : "bg-fox-light animate-pulse") : "bg-surface-2"
+                done ? "bg-up" : current ? (failed && i === 2 ? "bg-down" : "bg-zec-light animate-pulse") : "bg-surface-2"
               }`}
             />
             <p className={`mt-1.5 text-xs ${current ? "text-snow" : "text-muted"}`}>{label}</p>

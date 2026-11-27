@@ -7,7 +7,7 @@ import { browserSupportsWebAuthn, startAuthentication, startRegistration, WebAut
 import type { AgentSummary } from "./agent-service";
 
 export type Me = {
-  user: { id: string; origin: string; createdAt: string } | null;
+  user: { id: string; origin: string; handle: string | null; createdAt: string } | null;
   agent: AgentSummary | null;
 };
 
@@ -105,13 +105,11 @@ export async function signOut(): Promise<void> {
   await refreshAccount();
 }
 
-// ---------- Bot wallet ----------
+// ---------- Wallet ----------
 
 export type PolicyChoices = {
-  dailyBudgetUsd: string;
-  withdrawZec: string;
-  withdrawUsdcBase?: string;
-  withdrawUsdcSol?: string;
+  dailyLimitUsd: string;
+  cashOutZec?: string;
 };
 
 type Prepared = { correlationId: string; agentId: string; webauthnOptions: Record<string, unknown>; summary: string; expiresAt: string };
@@ -121,18 +119,22 @@ export function prepareWallet(choices: PolicyChoices): Promise<Prepared> {
   return post<Prepared>("/api/agent/prepare", choices);
 }
 
-/** Sign the prepared intent with the passkey, submit it, and wait for the wallet. */
-export async function signAndCreateWallet(prepared: Prepared, onProgress: (step: string) => void): Promise<CreateResult> {
-  let credential;
+/** Ask the passkey to sign an owner intent prepared by the server. */
+async function signIntent(webauthnOptions: Record<string, unknown>) {
   try {
-    onProgress("Waiting for your passkey…");
-    credential = await startAuthentication({
-      optionsJSON: prepared.webauthnOptions as unknown as Parameters<typeof startAuthentication>[0]["optionsJSON"],
+    return await startAuthentication({
+      optionsJSON: webauthnOptions as unknown as Parameters<typeof startAuthentication>[0]["optionsJSON"],
     });
   } catch (e) {
     throw explain(e);
   }
-  onProgress("Creating your bot wallet on NEAR Intents…");
+}
+
+/** Sign the prepared intent with the passkey, submit it, and wait for the wallet. */
+export async function signAndCreateWallet(prepared: Prepared, onProgress: (step: string) => void): Promise<CreateResult> {
+  onProgress("Waiting for your passkey…");
+  const credential = await signIntent(prepared.webauthnOptions);
+  onProgress("Creating your Zorro wallet on NEAR Intents…");
   let result = await post<CreateResult>("/api/agent/submit", { correlationId: prepared.correlationId, credential });
   // Settlement can take a little while; keep checking without re-signing.
   for (let i = 0; i < 4 && result.status === "PROCESSING"; i++) {
@@ -143,6 +145,23 @@ export async function signAndCreateWallet(prepared: Prepared, onProgress: (step:
   return result;
 }
 
-export function checkBotPermission(): Promise<{ ok: boolean; detail: string }> {
+type ApprovalResult = { status: "APPROVED"; count: number } | { status: "PROCESSING"; correlationId: string } | { status: "FAILED"; reason: string };
+
+/** Approve every waiting payee with one Face ID (a policy update on NEAR Intents). */
+export async function approvePayees(onProgress: (step: string) => void): Promise<ApprovalResult> {
+  onProgress("Preparing your new rules…");
+  const prepared = await post<{ correlationId: string; webauthnOptions: Record<string, unknown>; count: number }>("/api/payees/approve", { step: "prepare" });
+  onProgress("Confirm with Face ID or your fingerprint…");
+  const credential = await signIntent(prepared.webauthnOptions);
+  onProgress("Saving your approved payees on NEAR Intents…");
+  let result = await post<ApprovalResult>("/api/payees/approve", { step: "submit", correlationId: prepared.correlationId, credential });
+  for (let i = 0; i < 4 && result.status === "PROCESSING"; i++) {
+    onProgress("Still confirming…");
+    result = await post<ApprovalResult>("/api/payees/approve", { step: "submit", correlationId: prepared.correlationId });
+  }
+  return result;
+}
+
+export function checkPaymentPermission(): Promise<{ ok: boolean; detail: string }> {
   return post("/api/agent/grant-check");
 }

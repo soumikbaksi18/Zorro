@@ -27,42 +27,36 @@ describe("spkiFromCose", () => {
   });
 });
 
-describe("buildPolicy", () => {
-  const input = PolicyInputSchema.parse({
-    dailyBudgetUsd: "50",
-    withdrawZec: "t1JM15Ahts5Vqwqa9SPryUB7YZu9WcLAyaK",
-    withdrawUsdcBase: "0x2527D02599Ba641c19FEa793cD0F167589a0f10D",
-  });
+describe("buildPolicy (payments)", () => {
+  const input = PolicyInputSchema.parse({ dailyLimitUsd: "100", cashOutZec: "t1JM15Ahts5Vqwqa9SPryUB7YZu9WcLAyaK" });
   const policy = buildPolicy(input);
 
-  it("lets bots trade automatically (no per-trade approval) within a daily USD budget", () => {
+  it("pays automatically (no per-payment approval) within a daily USD limit", () => {
     expect(policy.owner_approval).toBe(false);
     expect(policy.frozen).toBe(false);
-    expect(policy.actions).toEqual(["swap", "limit_order", "withdraw"]);
-    expect(policy.budget).toEqual({ daily_usd: "50", weekly_usd: null, monthly_usd: null });
+    expect(policy.actions).toEqual(["swap", "withdraw", "transfer"]);
+    expect(policy.budget).toEqual({ daily_usd: "100", weekly_usd: null, monthly_usd: null });
     expect(policy.max_actions_per_hour).toBe(20);
+    expect(policy.confidential).toBe(true);
+    expect(policy.limit_order).toBeUndefined();
   });
 
-  it("only allows withdrawals to the user's own addresses, on canonical chain names", () => {
+  it("only lets money leave to approved payees (here: the user's own Zcash wallet)", () => {
     expect(policy.destinations).toEqual({
       mode: "only",
-      list: [
-        { action: "withdraw", chain: "zec", address: "t1JM15Ahts5Vqwqa9SPryUB7YZu9WcLAyaK", memo: null },
-        { action: "withdraw", chain: "base", address: "0x2527d02599ba641c19fea793cd0f167589a0f10d", memo: null },
-      ],
+      list: [{ action: "withdraw", chain: "zec", address: "t1JM15Ahts5Vqwqa9SPryUB7YZu9WcLAyaK", memo: null }],
     });
+    expect(buildPolicy(PolicyInputSchema.parse({ dailyLimitUsd: "50" })).destinations).toEqual({ mode: "only", list: [] });
   });
 
-  it("is confidential (required for limit orders) and caps limit-order deviation", () => {
-    expect(policy.confidential).toBe(true);
-    expect(policy.limit_order).toEqual({ max_deviation_bps: 100 });
+  it("allows every coin Zorro can pay in, and nothing else", () => {
+    expect(policy.assets).toContain("nep141:zec.omft.near");
+    expect(policy.assets).toContain("nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near");
+    expect((policy.assets as string[]).length).toBe(13);
   });
 
   it("rejects bad input", () => {
-    expect(PolicyInputSchema.safeParse({ dailyBudgetUsd: "0", withdrawZec: "t1JM15Ahts5Vqwqa9SPryUB7YZu9WcLAyaK" }).success).toBe(false);
-    expect(PolicyInputSchema.safeParse({ dailyBudgetUsd: "50", withdrawZec: "not-an-address" }).success).toBe(false);
-    expect(
-      PolicyInputSchema.safeParse({ dailyBudgetUsd: "50", withdrawZec: "t1JM15Ahts5Vqwqa9SPryUB7YZu9WcLAyaK", withdrawUsdcBase: "0x12" }).success,
-    ).toBe(false);
+    expect(PolicyInputSchema.safeParse({ dailyLimitUsd: "0" }).success).toBe(false);
+    expect(PolicyInputSchema.safeParse({ dailyLimitUsd: "50", cashOutZec: "not-an-address" }).success).toBe(false);
   });
 });

@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zorro: private ZEC trading bots",
+  title: "Zorro: private cash for Zcash",
   description:
-    "Private, automatic trading for Zcash: swaps, stop-loss, DCA and more through NEAR Intents. Zorro never holds your keys or funds.",
+    "Hold ZEC and pay anyone, in any coin they want. Autopay, get-paid links and a tracker for every payment, through NEAR Intents.",
   applicationName: "Zorro",
   appleWebApp: {
     capable: true,
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#0b0a07",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

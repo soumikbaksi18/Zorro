@@ -1,60 +1,53 @@
 import type { Metadata } from "next";
-import { Bot, Globe, Link2, Server, Sparkles } from "lucide-react";
+import { Globe, Link2, Server, Sparkles, Users } from "lucide-react";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { AccountCard } from "./AccountCard";
 import { SettingsPanel } from "./SettingsPanel";
 import { SystemStatus } from "./SystemStatus";
-import { DemoPanel } from "./DemoPanel";
 
-export const metadata: Metadata = { title: "Settings · Zorro" };
+export const metadata: Metadata = { title: "Account · Zorro" };
 
 const VISIBILITY = [
   {
-    icon: Server,
-    title: "Zorro's server",
-    body: "Forwards swap quotes and will run your bots. Stores bot settings and an encrypted bot permission, never your seed phrase, keys or funds. Swaps stay on this phone.",
+    icon: Users,
+    title: "People you pay",
+    body: "See only what lands at their address (and the reference on their receipt), never your balance or other payments. It arrives from NEAR Intents, not from an address of yours.",
   },
   {
     icon: Globe,
     title: "NEAR Intents",
-    body: "Executes swaps and holds bot-wallet funds under the limits you sign. Sees amounts, addresses and timing. Refund addresses are recorded publicly on NEAR.",
+    body: "Holds your wallet's private balance and runs each payment under the rules you signed. It sees amounts, payees and timing.",
+  },
+  {
+    icon: Server,
+    title: "Zorro's server",
+    body: "Runs your payments and Autopay. Stores payees, your payment history and an encrypted payment permission. Never your passkey, keys or funds.",
   },
   {
     icon: Link2,
     title: "Blockchains",
-    body: "Swap deposits and USDC transfers are public on their chains. ZEC delivered by NEAR Intents goes to transparent addresses: shield it in your wallet afterwards.",
+    body: "Adding money and payouts to other chains are public on those chains. ZEC enters and leaves through transparent (t1) addresses. Zorro-to-Zorro payments stay off public chains.",
   },
   {
     icon: Sparkles,
     title: "AI service",
-    body: "Only sees the strategy text you type. Zorro blocks addresses, balances, keys and tokens from being sent to it.",
-  },
-  {
-    icon: Bot,
-    title: "Bots",
-    body: "Run on Zorro's worker and trade only within your signed policy; funds can only leave to addresses you list. Paper bots only ever ask for quotes.",
+    body: "Only sees what you type and your payees' names. Zorro blocks addresses, balances, keys and tokens from being sent to it.",
   },
 ];
 
-export default function SettingsPage() {
+export default function AccountPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <p className="eyebrow">Settings</p>
-        <h1 className="page-title mt-3">Preferences, status &amp; privacy</h1>
-      </header>
-
-      <div className="grid gap-6">
-        <div className="flex flex-col gap-6">
-          <SettingsPanel />
-          <SystemStatus />
-          <DemoPanel />
-        </div>
-
+    <>
+      <PageHeader title="Account" />
+      <div className="flex flex-col gap-6">
+        <AccountCard />
+        <SettingsPanel />
+        <SystemStatus />
         <section className="panel p-5" aria-labelledby="trust-heading">
-          <p className="eyebrow">Trust model</p>
-          <h2 id="trust-heading" className="mt-3 text-xl font-light tracking-[-0.02em]">
-            What everyone can see
+          <h2 id="trust-heading" className="section-title">
+            Who can see what
           </h2>
-          <div className="mt-4">
+          <div className="mt-3">
             {VISIBILITY.map(({ icon: Icon, title, body }) => (
               <div key={title} className="visibility-row">
                 <Icon size={16} strokeWidth={1.6} aria-hidden="true" />
@@ -65,11 +58,11 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
-          <p className="mt-2 border-t border-line pt-4 text-xs text-leaf">
-            No Zorro account and no analytics.
+          <p className="mt-2 border-t border-line pt-4 text-xs leading-relaxed text-muted">
+            Private from the public, not from everyone: keep long-term savings shielded in your Zcash wallet and top up Zorro with spending money. No analytics.
           </p>
         </section>
       </div>
-    </div>
+    </>
   );
 }

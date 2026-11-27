@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { SwapForm } from "./SwapForm";
 
-export const metadata: Metadata = { title: "Swap · Zorro" };
+export const metadata: Metadata = { title: "Pay from another wallet · Zorro" };
 
 export default function SwapPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <p className="eyebrow">Swap</p>
-        <h1 className="page-title mt-3">ZEC ⇄ USDC at today&apos;s price</h1>
-        <p className="page-lead">
-          A one-off swap through NEAR Intents, paid from your own wallet. For automatic trading, see Bots.
-        </p>
-      </header>
+    <>
+      <PageHeader
+        title="Pay from another wallet"
+        lead="Pay someone in USDC straight from your own Zcash wallet (or ZEC from your USDC wallet). Your wallet app signs; Zorro holds nothing."
+        back={{ href: "/pay", label: "Pay" }}
+      />
       <SwapForm />
-    </div>
+    </>
   );
 }

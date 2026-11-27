@@ -15,9 +15,9 @@ export function TabBarView({ pathname }: { pathname?: string }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ink/92 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ink/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
     >
-      <ul className="mx-auto flex max-w-md">
+      <ul className="mx-auto flex max-w-md px-2">
         {PRIMARY_NAV.map((item) => {
           const active = isActive(item.href, pathname);
           const Icon = item.icon;
@@ -26,13 +26,11 @@ export function TabBarView({ pathname }: { pathname?: string }) {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 font-mono text-[9px] tracking-[0.12em] uppercase transition-colors ${
-                  active ? "text-fox-light" : "text-muted hover:text-snow"
+                className={`flex flex-col items-center gap-1 pt-3 pb-2.5 text-[11px] font-medium transition-colors ${
+                  active ? "text-zec" : "text-muted hover:text-snow"
                 }`}
               >
-                <span className={`grid h-8 w-12 place-items-center rounded-full ${active ? "bg-fox/20" : ""}`}>
-                  <Icon size={19} strokeWidth={1.7} aria-hidden="true" />
-                </span>
+                <Icon size={21} strokeWidth={active ? 2 : 1.6} aria-hidden="true" />
                 {item.label}
               </Link>
             </li>

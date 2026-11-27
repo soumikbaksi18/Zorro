@@ -106,6 +106,7 @@ export async function finishRegistration(response: RegistrationResponseJSON): Pr
     passkeyTransports: credential.transports ?? null,
     rpId,
     origin,
+    handle: null,
     createdAt: new Date(),
   };
   await db.insert(schema.users).values(user);

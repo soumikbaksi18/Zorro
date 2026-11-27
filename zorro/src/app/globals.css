@@ -1,30 +1,32 @@
 @import "tailwindcss";
 
 /*
- * Zorro design system.
- * Interface patterns follow Zeno Wallet (ArcGenesis): hairline panels, monospace
- * uppercase labels, pill actions, sidebar on desktop / tab bar on mobile.
- * Colour is Zorro's and functional: purple = action, gold = notice,
- * green = success or price up, red = error or price down.
+ * Zorro design system: private cash in Zcash yellow.
+ * Warm near-black pages, soft yellow light at the top of each screen, rounded
+ * dark panels, glassy yellow cards for money, and receipt cards in yellow shades.
+ * Colour is functional: yellow = action / brand, green = money in or success,
+ * red = error, amber = notices.
  */
 @theme {
-  --color-ink: #0a0a0a; /* page */
-  --color-panel: #111013; /* hairline panels */
-  --color-surface: #141217; /* raised cards */
-  --color-surface-2: #1d1a22; /* inputs, chips */
-  --color-line: #2a2631; /* hairlines */
-  --color-line-strong: #3d3646;
-  --color-fox: #8a3fc8;
-  --color-fox-light: #b86ae6;
-  --color-fox-dark: #5b2491;
-  --color-leaf: #6cc24a;
-  --color-leaf-dark: #2e8b3a;
-  --color-gold: #e9b33b;
-  --color-snow: #f1eef5;
-  --color-muted: #9b95a6;
-  --color-dim: #6f6878;
-  --color-up: #6cc24a;
-  --color-down: #f05d6c;
+  --color-ink: #0b0a07; /* page */
+  --color-panel: #16140e; /* rounded panels */
+  --color-surface: #1d1a12; /* raised cards, inputs */
+  --color-surface-2: #26221a; /* chips, pressed */
+  --color-line: #2c281d; /* hairlines */
+  --color-line-strong: #3d3727;
+  --color-zec: #f4b728; /* Zcash yellow: primary */
+  --color-zec-light: #ffd45e;
+  --color-zec-dark: #c88f0c;
+  --color-zec-ink: #1c1505; /* text on yellow */
+  --color-cream: #fff4cf; /* receipt shades, light to deep */
+  --color-butter: #ffe48c;
+  --color-honey: #f8cf45;
+  --color-snow: #f7f3e8;
+  --color-muted: #a8a294;
+  --color-dim: #716b5d;
+  --color-up: #5fcf7a;
+  --color-down: #f2636f;
+  --color-gold: #f59e2b; /* notices (amber, so it reads apart from the brand yellow) */
 }
 
 @theme inline {
@@ -45,12 +47,12 @@ body {
 }
 
 ::selection {
-  background: var(--color-fox);
-  color: var(--color-snow);
+  background: var(--color-zec);
+  color: var(--color-zec-ink);
 }
 
 :where(a, button, input, select, textarea, summary):focus-visible {
-  outline: 2px solid var(--color-fox-light);
+  outline: 2px solid var(--color-zec-light);
   outline-offset: 3px;
 }
 
@@ -63,8 +65,16 @@ button:disabled {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* Hide scrollbars on horizontal carousels (still scrollable). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @layer components {
-  /* Small monospace label above a value or section ("ZEC PRICE", "TOOLS"). */
+  /* Small label above a value or section. */
   .eyebrow {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -74,27 +84,63 @@ button:disabled {
     color: var(--color-muted);
   }
 
-  /* Hairline container: the basic building block of every screen. */
+  /* Soft yellow light behind the top of a screen (full-bleed, sits behind content). */
+  .screen-glow {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 340px;
+    pointer-events: none;
+    background:
+      radial-gradient(90% 70% at 15% -10%, rgb(244 183 40 / 0.42), transparent 62%),
+      radial-gradient(70% 60% at 100% 0%, rgb(255 212 94 / 0.16), transparent 70%),
+      linear-gradient(to bottom, rgb(244 183 40 / 0.06), transparent);
+    z-index: 0;
+  }
+
+  /* Rounded dark container: the basic building block. */
   .panel {
     background: var(--color-panel);
     border: 1px solid var(--color-line);
-    border-radius: 14px;
+    border-radius: 22px;
   }
 
-  /* The hero card: soft purple light from the top-right corner. */
+  /* Highlighted panel with yellow light in the corner. */
   .panel-hero {
     border: 1px solid var(--color-line-strong);
-    border-radius: 18px;
+    border-radius: 22px;
     background:
-      radial-gradient(120% 80% at 100% 0%, rgb(138 63 200 / 0.22), transparent 60%),
-      radial-gradient(80% 60% at 0% 100%, rgb(184 106 230 / 0.06), transparent 70%),
-      var(--color-surface);
-    box-shadow: 0 30px 80px -48px rgb(138 63 200 / 0.55);
+      radial-gradient(120% 80% at 100% 0%, rgb(244 183 40 / 0.18), transparent 60%),
+      var(--color-panel);
+  }
+
+  /* Glassy money card (balances). Add .glass-card-dark for the secondary style. */
+  .glass-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    color: var(--color-zec-ink);
+    background:
+      radial-gradient(120% 90% at 85% 10%, rgb(255 255 255 / 0.55), transparent 45%),
+      radial-gradient(90% 80% at 10% 100%, rgb(200 143 12 / 0.55), transparent 60%),
+      linear-gradient(135deg, #ffe48c 0%, #f4b728 55%, #e0a215 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      0 24px 50px -28px rgb(244 183 40 / 0.6);
+  }
+  .glass-card-dark {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    color: var(--color-snow);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background:
+      radial-gradient(120% 90% at 90% 0%, rgb(244 183 40 / 0.28), transparent 55%),
+      linear-gradient(160deg, #2a2516 0%, #17140d 100%);
   }
 
   .page-title {
-    font-size: 26px;
-    font-weight: 400;
+    font-size: 28px;
+    font-weight: 500;
     letter-spacing: -0.03em;
     line-height: 1.15;
   }
@@ -107,14 +153,20 @@ button:disabled {
     color: var(--color-muted);
   }
 
+  .section-title {
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
   .btn-primary,
   .btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 46px;
-    padding: 0 20px;
+    min-height: 48px;
+    padding: 0 22px;
     border-radius: 999px;
     font-size: 14px;
     font-weight: 600;
@@ -124,26 +176,42 @@ button:disabled {
       opacity 0.15s;
   }
   .btn-primary {
-    background: var(--color-fox);
-    color: var(--color-snow);
+    background: var(--color-zec);
+    color: var(--color-zec-ink);
   }
   .btn-primary:hover {
-    background: #9a4dd8;
+    background: var(--color-zec-light);
   }
   .btn-secondary {
     border: 1px solid var(--color-line-strong);
     color: var(--color-snow);
-    background: rgb(255 255 255 / 0.02);
+    background: rgb(255 255 255 / 0.03);
   }
   .btn-secondary:hover {
-    border-color: var(--color-fox-light);
+    border-color: var(--color-zec);
   }
   .btn-primary:disabled,
   .btn-secondary:disabled {
     opacity: 0.4;
   }
 
-  /* Underlined tabs (Activity / Markets, chart ranges). */
+  /* Round icon action (Quick actions, Home buttons). */
+  .icon-action {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    color: var(--color-zec-light);
+    transition: background 0.15s;
+  }
+  .icon-action-solid {
+    background: var(--color-zec);
+    color: var(--color-zec-ink);
+  }
+
+  /* Underlined tabs. */
   .tabs {
     display: flex;
     align-items: center;
@@ -166,36 +234,59 @@ button:disabled {
   }
   .tab[aria-selected="true"],
   .tab[aria-pressed="true"] {
-    color: var(--color-fox-light);
-    border-bottom-color: var(--color-fox-light);
+    color: var(--color-zec);
+    border-bottom-color: var(--color-zec);
   }
 
-  /* Small status chip in the header ("● Mainnet · NEAR Intents"). */
+  /* Filter chips. */
+  .chip {
+    flex-shrink: 0;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background: var(--color-panel);
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+    transition:
+      color 0.15s,
+      background 0.15s;
+  }
+  .chip:hover {
+    color: var(--color-snow);
+  }
+  .chip[aria-pressed="true"] {
+    border-color: var(--color-zec);
+    background: var(--color-zec);
+    color: var(--color-zec-ink);
+  }
+
+  /* Small status chip. */
   .status-pill {
     display: inline-flex;
     align-items: center;
     gap: 7px;
     padding: 5px 10px;
-    border: 1px solid #5a4a20;
-    border-radius: 8px;
-    background: #1c170c;
+    border: 1px solid #5a4a1c;
+    border-radius: 999px;
+    background: #1f1a0b;
     font-family: var(--font-mono);
     font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--color-gold);
+    color: var(--color-zec);
     white-space: nowrap;
   }
 
-  /* Notice banner (gold) and its body copy. */
+  /* Notice banner (amber) and its body copy. */
   .notice {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     padding: 14px 16px;
-    border: 1px solid #5a4a20;
-    border-radius: 14px;
-    background: #1c170c;
+    border: 1px solid #5c3f14;
+    border-radius: 18px;
+    background: #1e160a;
   }
   .notice strong {
     display: block;
@@ -207,7 +298,7 @@ button:disabled {
     margin-top: 3px;
     font-size: 12px;
     line-height: 1.5;
-    color: #cdb98a;
+    color: #d6b98c;
   }
 
   /* "What others can see" rows. */
@@ -234,22 +325,52 @@ button:disabled {
     color: var(--color-muted);
   }
 
-  /* Text inputs on dark panels. */
+  /* Text inputs. */
   .field {
     width: 100%;
-    min-height: 48px;
+    min-height: 50px;
     border: 1px solid var(--color-line-strong);
-    border-radius: 12px;
-    background: var(--color-panel);
+    border-radius: 14px;
+    background: var(--color-surface);
     padding: 0 14px;
     outline: none;
     transition: border-color 0.15s;
   }
   .field:focus {
-    border-color: var(--color-fox-light);
+    border-color: var(--color-zec);
   }
   .field[aria-invalid="true"] {
     border-color: var(--color-down);
+  }
+
+  /* Progress bar (limits, monthly spend). */
+  .meter {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    overflow: hidden;
+  }
+  .meter > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-zec-dark), var(--color-zec-light));
+  }
+
+  /* Receipt cards (Tracker): stacked, light to deep yellow, dark text. */
+  .receipt {
+    border-radius: 26px;
+    color: var(--color-zec-ink);
+    padding: 22px 22px 40px;
+  }
+  .receipt-0 {
+    background: var(--color-cream);
+  }
+  .receipt-1 {
+    background: var(--color-butter);
+  }
+  .receipt-2 {
+    background: var(--color-honey);
   }
 }
 

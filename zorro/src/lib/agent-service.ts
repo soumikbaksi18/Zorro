@@ -1,14 +1,16 @@
-// The user's bot wallet: a NEAR Intents agent owned by their passkey. Server-side only.
+// The user's Zorro wallet: a NEAR Intents agent owned by their passkey. Server-side only.
 //
 // Flow (one passkey signature):
 //   prepareAgentCreate → user signs intent.payload with their passkey → submitAgentCreate
-// The same signature installs the policy AND authorizes Zorro's grant (bot permission).
+// The same signature installs the rules (policy) AND authorizes Zorro's grant, which lets
+// Zorro run the payments the user asks for, only to approved payees, within the daily limit.
 
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { STABLECOINS, ZEC } from "./assets";
-import { isEvmAddress, isSolanaAddress, zcashAddressKind } from "./addresses";
+import { randomUUID } from "node:crypto";
+import { zcashAddressKind } from "./addresses";
+import { COINS, coin } from "./coins";
 import {
   AgentApiError,
   generateIntent,
@@ -18,6 +20,7 @@ import {
   submitIntent,
   type AgentPolicy,
   type Operation,
+  type PolicyDestination,
 } from "./agent-api";
 import { decryptSecret, encryptSecret, newGrantToken, newIdempotencyKey, sha256Hex } from "./crypto";
 import type { CurrentUser } from "./session";
@@ -31,57 +34,40 @@ export class AgentError extends Error {
   }
 }
 
-const GRANT_LABEL = "Zorro bots";
+const GRANT_LABEL = "Zorro payments";
 const GRANT_DAYS = 180;
 const MAX_ACTIONS_PER_HOUR = 20;
-const LIMIT_ORDER_MAX_DEVIATION_BPS = 100;
 
 // ---------- Policy ----------
 
 export const PolicyInputSchema = z.object({
-  /** Most the bots may trade per day, in USD (the Agent API enforces it). */
-  dailyBudgetUsd: z.string().regex(/^[1-9]\d{0,4}(\.\d{1,2})?$/, "Daily budget must be between $1 and $99,999"),
-  /** Where ZEC may be withdrawn: required, so profits can always come home. */
-  withdrawZec: z
-    .string()
-    .trim()
-    .refine((a) => zcashAddressKind(a) !== null, "Enter your Zcash address"),
-  withdrawUsdcBase: z
+  /** Most Zorro may pay out per day, in USD (the Agent API enforces it). */
+  dailyLimitUsd: z.string().regex(/^[1-9]\d{0,4}(\.\d{1,2})?$/, "Daily limit must be between $1 and $99,999"),
+  /** Optional: the user's own Zcash address, approved as a first payee ("cash out to my wallet"). */
+  cashOutZec: z
     .string()
     .trim()
     .optional()
-    .refine((a) => !a || isEvmAddress(a), "That isn't a Base address"),
-  withdrawUsdcSol: z
-    .string()
-    .trim()
-    .optional()
-    .refine((a) => !a || isSolanaAddress(a), "That isn't a Solana address"),
+    .refine((a) => !a || zcashAddressKind(a) !== null, "That isn't a Zcash address"),
 });
 export type PolicyInput = z.infer<typeof PolicyInputSchema>;
 
-type Destination = { action: "withdraw"; chain: string; address: string; memo: null };
-
 /** Turn the user's choices into the complete Agent API policy they will sign. */
-export function buildPolicy(input: PolicyInput): AgentPolicy {
-  const destinations: Destination[] = [{ action: "withdraw", chain: "zec", address: input.withdrawZec, memo: null }];
-  if (input.withdrawUsdcBase) {
-    destinations.push({ action: "withdraw", chain: "base", address: input.withdrawUsdcBase.toLowerCase(), memo: null });
-  }
-  if (input.withdrawUsdcSol) {
-    destinations.push({ action: "withdraw", chain: "sol", address: input.withdrawUsdcSol, memo: null });
-  }
+export function buildPolicy(input: PolicyInput, destinations: PolicyDestination[] = []): AgentPolicy {
+  const list = [...destinations];
+  if (input.cashOutZec) list.push({ action: "withdraw", chain: "zec", address: input.cashOutZec.trim(), memo: null });
   return {
     frozen: false,
-    actions: ["swap", "limit_order", "withdraw"],
-    confidential: true, // private balances; also required for limit orders
-    owner_approval: false, // true would make every bot trade wait for Face ID
-    assets: [ZEC.assetId, ...STABLECOINS.map((s) => s.assetId)],
+    actions: ["swap", "withdraw", "transfer"],
+    confidential: true, // private balances; required for every new policy
+    owner_approval: false, // true would make every payment (and Autopay) wait for Face ID
+    assets: COINS.map((c) => c.assetId),
     limits: {},
     max_actions_per_hour: MAX_ACTIONS_PER_HOUR,
-    destinations: { mode: "only", list: destinations },
-    budget: { daily_usd: input.dailyBudgetUsd, weekly_usd: null, monthly_usd: null },
+    // Nothing leaves the wallet except to payees the owner approved with their passkey.
+    destinations: { mode: "only", list },
+    budget: { daily_usd: input.dailyLimitUsd, weekly_usd: null, monthly_usd: null },
     timelock_ms: 0,
-    limit_order: { max_deviation_bps: LIMIT_ORDER_MAX_DEVIATION_BPS },
   };
 }
 
@@ -96,10 +82,10 @@ export type PreparedIntent = {
   expiresAt: string;
 };
 
-/** The user's active bot wallet and Zorro's grant token for it (decrypted, server memory only). */
+/** The user's active wallet and Zorro's grant token for it (decrypted, server memory only). */
 export async function agentWithGrant(user: CurrentUser) {
   const agent = await activeAgentFor(user.id);
-  if (!agent || agent.status !== "ACTIVE") throw new AgentError("Create your bot wallet first.", 409);
+  if (!agent || agent.status !== "ACTIVE") throw new AgentError("Create your Zorro wallet first.", 409);
   const [grant] = await db
     .select()
     .from(schema.grants)
@@ -107,7 +93,7 @@ export async function agentWithGrant(user: CurrentUser) {
     .orderBy(desc(schema.grants.createdAt))
     .limit(1);
   if (!grant || grant.revokedAt || grant.expiresAt < new Date()) {
-    throw new AgentError("Zorro's bot permission is missing or expired.", 409);
+    throw new AgentError("Zorro's payment permission is missing or expired.", 409);
   }
   return { agent, grantToken: decryptSecret(grant.tokenCiphertext, agent.id) };
 }
@@ -125,9 +111,9 @@ export async function activeAgentFor(userId: string) {
 export async function prepareAgentCreate(user: CurrentUser, currentOrigin: string, input: PolicyInput): Promise<PreparedIntent> {
   if (currentOrigin !== user.origin) {
     // A passkey only works on the site it was made for.
-    throw new AgentError(`Your passkey belongs to ${user.origin}. Open Zorro there to create your bot wallet.`, 409);
+    throw new AgentError(`Your passkey belongs to ${user.origin}. Open Zorro there to create your wallet.`, 409);
   }
-  if (await activeAgentFor(user.id)) throw new AgentError("You already have a bot wallet.", 409);
+  if (await activeAgentFor(user.id)) throw new AgentError("You already have a Zorro wallet.", 409);
 
   const policy = buildPolicy(input);
   const token = newGrantToken();
@@ -139,7 +125,7 @@ export async function prepareAgentCreate(user: CurrentUser, currentOrigin: strin
     generated = await generateIntent(
       {
         type: "agent_create",
-        name: "Zorro bots",
+        name: "Zorro wallet",
         external_user_id: user.id,
         owner: {
           type: "passkey",
@@ -172,6 +158,7 @@ export async function prepareAgentCreate(user: CurrentUser, currentOrigin: strin
     grantTokenCiphertext: encryptSecret(token, generated.agent_id),
     grantTokenHash: tokenHash,
     grantExpiresAt,
+    meta: input.cashOutZec ? { cashOutZec: input.cashOutZec.trim() } : null,
     expiresAt: new Date(generated.expires_at),
   });
 
@@ -250,12 +237,20 @@ export async function waitForAgent(user: CurrentUser, correlationId: string): Pr
         })
         .onConflictDoNothing();
     }
+    // The user's own Zcash address, approved in the same signature, becomes their first payee.
+    const cashOut = (pending.meta as { cashOutZec?: string } | null)?.cashOutZec;
+    if (cashOut) {
+      await tx
+        .insert(schema.payees)
+        .values({ id: randomUUID(), userId: user.id, name: "My Zcash wallet", kind: "address", coinKey: "zec", chain: "zec", address: cashOut, status: "approved", approvedAt: new Date() })
+        .onConflictDoNothing();
+    }
     await tx.delete(schema.pendingIntents).where(eq(schema.pendingIntents.correlationId, correlationId));
   });
   return { status: "ACTIVE", agentId: agent.id };
 }
 
-async function pendingFor(user: CurrentUser, correlationId: string) {
+export async function pendingFor(user: CurrentUser, correlationId: string) {
   const [pending] = await db
     .select()
     .from(schema.pendingIntents)
@@ -274,9 +269,8 @@ export type AgentSummary = {
   status: string;
   nearAccountId: string | null;
   createdAt: string;
-  dailyBudgetUsd: string | null;
+  dailyLimitUsd: string | null;
   maxActionsPerHour: number | null;
-  withdrawTo: { chain: string; address: string }[];
   grant: { label: string; expiresAt: string; revoked: boolean } | null;
 };
 
@@ -296,9 +290,8 @@ export async function agentSummaryFor(user: CurrentUser): Promise<AgentSummary |
     status: agent.status,
     nearAccountId: agent.nearAccountId,
     createdAt: agent.createdAt.toISOString(),
-    dailyBudgetUsd: policy?.budget.daily_usd ?? null,
+    dailyLimitUsd: policy?.budget.daily_usd ?? null,
     maxActionsPerHour: policy?.max_actions_per_hour ?? null,
-    withdrawTo: ((policy?.destinations.list ?? []) as Destination[]).map((d) => ({ chain: d.chain, address: d.address })),
     grant: grant
       ? { label: grant.label, expiresAt: grant.expiresAt.toISOString(), revoked: grant.revokedAt !== null }
       : null,
@@ -324,28 +317,28 @@ export async function refreshAgent(user: CurrentUser): Promise<AgentSummary | nu
  */
 export async function checkGrant(user: CurrentUser): Promise<{ ok: boolean; detail: string }> {
   const agent = await activeAgentFor(user.id);
-  if (!agent) return { ok: false, detail: "No bot wallet yet" };
+  if (!agent) return { ok: false, detail: "No wallet yet" };
   const [grant] = await db.select().from(schema.grants).where(eq(schema.grants.agentId, agent.id)).limit(1);
-  if (!grant || grant.revokedAt) return { ok: false, detail: "No active bot permission" };
+  if (!grant || grant.revokedAt) return { ok: false, detail: "No active payment permission" };
 
   const token = decryptSecret(grant.tokenCiphertext, agent.id);
   try {
     await quoteAgentSwap(
       agent.id,
-      { origin_asset: STABLECOINS[0].assetId, destination_asset: ZEC.assetId, amount: "1000000" },
+      { origin_asset: coin("usdc-base").assetId, destination_asset: coin("zec").assetId, amount: "1000000" },
       token,
     );
-    return { ok: true, detail: "Bot permission accepted by NEAR Intents" };
+    return { ok: true, detail: "Payment permission accepted by NEAR Intents" };
   } catch (e) {
     if (e instanceof AgentApiError && (e.status === 401 || e.status === 403 || e.code?.startsWith("grant"))) {
       return { ok: false, detail: `Rejected: ${e.code ?? e.status}` };
     }
-    if (e instanceof AgentApiError) return { ok: true, detail: `Bot permission accepted (quote said: ${e.code ?? e.status})` };
+    if (e instanceof AgentApiError) return { ok: true, detail: `Payment permission accepted (quote said: ${e.code ?? e.status})` };
     return { ok: false, detail: "Couldn't reach NEAR Intents" };
   }
 }
 
-function friendly(e: unknown): AgentError {
+export function friendly(e: unknown): AgentError {
   if (e instanceof AgentApiError) {
     const detail = e.detail ?? e.message;
     if (e.code === "intent_expired") return new AgentError("The signing window expired. Please try again.", 410);

@@ -26,19 +26,19 @@ export function PasskeyGate({ title = "Create your Zorro passkey" }: { title?: s
 
   return (
     <section className="panel-hero p-5" aria-labelledby="gate-heading">
-      <span className="grid h-10 w-10 place-items-center rounded-xl border border-line text-fox-light">
+      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-zec/15 text-zec">
         <Fingerprint size={20} strokeWidth={1.6} aria-hidden="true" />
       </span>
-      <h2 id="gate-heading" className="mt-4 text-xl font-light tracking-[-0.02em]">
+      <h2 id="gate-heading" className="mt-4 text-xl font-medium tracking-[-0.02em]">
         {title}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Your passkey is your Zorro account: Face ID, fingerprint or your device PIN. No email, password or seed
-        phrase. It also owns your bot wallet, so keep it on a device you trust.
+        phrase. It also owns your wallet and approves every payee, so keep it on a device you trust.
       </p>
 
       {blocker ? (
-        <p className="mt-4 rounded-xl border border-gold/30 bg-gold/10 px-3 py-2.5 text-sm text-gold">{blocker}</p>
+        <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/10 px-3 py-2.5 text-sm text-gold">{blocker}</p>
       ) : (
         <div className="mt-5 flex flex-col gap-2.5">
           <button type="button" onClick={() => run("create")} disabled={busy !== null} className="btn-primary w-full">

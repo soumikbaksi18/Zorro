@@ -1,20 +1,20 @@
-import { ArrowLeftRight, Bot, House, ListChecks, Newspaper, type LucideIcon } from "lucide-react";
+import { CircleUserRound, House, Newspaper, ReceiptText, Send, type LucideIcon } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/", label: "Home", icon: House },
-  { href: "/swap", label: "Swap", icon: ArrowLeftRight },
-  { href: "/bots", label: "Bots", icon: Bot },
+  { href: "/pay", label: "Pay", icon: Send },
+  { href: "/tracker", label: "Tracker", icon: ReceiptText },
   { href: "/news", label: "News", icon: Newspaper },
-  { href: "/orders", label: "Orders", icon: ListChecks },
+  { href: "/account", label: "Account", icon: CircleUserRound },
 ];
 
-/** Which tab a path belongs to (swap trackers count as Orders). */
+/** Which tab a path belongs to. */
 export function isActive(href: string, pathname: string | undefined): boolean {
   if (pathname === undefined) return false;
   if (href === "/") return pathname === "/";
-  if (href === "/orders") return pathname.startsWith("/orders") || pathname.startsWith("/swap/");
-  if (href === "/swap") return pathname === "/swap";
+  if (href === "/pay") return ["/pay", "/payees", "/autopay", "/request", "/scan", "/swap", "/orders"].some((p) => pathname.startsWith(p));
+  if (href === "/account") return pathname.startsWith("/account") || pathname.startsWith("/wallet");
   return pathname.startsWith(href);
 }

@@ -4,7 +4,7 @@
 // Who signs what:
 // - Partner API key (X-API-Key): every call except public ones.
 // - Owner (the user's passkey): signs intents built by generateIntent(), e.g. agent_create.
-// - Grant token (X-Grant-Token): Zorro's permission to trade within the owner's policy.
+// - Grant token (X-Grant-Token): Zorro's permission to pay within the owner's policy.
 // - Idempotency-Key: required on live money actions; retry with the SAME key, never a new one.
 
 import { z } from "zod";
@@ -112,7 +112,11 @@ export type Owner =
   | { type: "passkey"; credential_id: string; public_key: string; rp_id: string; origin: string }
   | { type: "near"; account_id: string; public_key: string };
 
-/** The owner-signed rules. Shape per the spec; tightened in Phase 4 when we build the policy screen. */
+export type PolicyDestination =
+  | { action: "withdraw"; chain: string; address: string; memo: string | null }
+  | { action: "transfer"; address: string; confidential: true };
+
+/** The owner-signed rules (complete policy: every policy_update replaces all of it). */
 export type AgentPolicy = {
   frozen: boolean;
   actions: ("swap" | "transfer" | "withdraw" | "limit_order")[];
@@ -121,7 +125,7 @@ export type AgentPolicy = {
   assets: unknown;
   limits: Record<string, unknown>;
   max_actions_per_hour: number | null;
-  destinations: { mode: "any" | "only" | "except"; list: unknown[] };
+  destinations: { mode: "any" | "only" | "except"; list: PolicyDestination[] };
   budget: { daily_usd: string | null; weekly_usd: string | null; monthly_usd: string | null };
   timelock_ms: number;
   limit_order?: { max_deviation_bps: number };
@@ -229,6 +233,8 @@ export const getPolicy = (agentId: string) =>
         revision: z.number().optional(),
         status: z.string().optional(),
         usage: z.object({ budget: z.object({ daily: BudgetWindow }).loose() }).loose().optional(),
+        cooldowns: z.object({ policy_change_available_at: z.string().nullish() }).loose().optional(),
+        policy: z.record(z.string(), z.unknown()).optional(),
       })
       .loose(),
   );
@@ -275,46 +281,17 @@ export const quoteAgentSwap = (agentId: string, body: SwapBody, grantToken?: str
 export const agentSwap = (agentId: string, body: SwapBody, g: GrantCall) =>
   call(`/v1/agents/${encodeURIComponent(agentId)}/swap`, OperationSchema, { body: { ...body, dry: false }, ...g });
 
-export type LimitOrderBody = {
-  base_asset: string;
-  quote_asset: string;
-  side: "buy" | "sell";
-  quantity: string;
-  price: string;
-  deadline?: string;
+export type WithdrawBody = {
+  asset: string;
+  amount: string;
+  chain: string;
+  recipient: string;
+  memo?: string;
+  /** Shown to the payee on their receipt (1-128 printable ASCII, no spaces). */
+  reference?: string;
+  /** Private to the account. */
   note?: string;
 };
-
-export const placeLimitOrder = (agentId: string, body: LimitOrderBody, g: GrantCall) =>
-  call(`/v1/agents/${encodeURIComponent(agentId)}/limit-orders`, OperationSchema, { body, ...g });
-
-/** Limit-order preview: needs only the partner key; places nothing. */
-export const previewLimitOrder = (agentId: string, body: LimitOrderBody) =>
-  call(`/v1/agents/${encodeURIComponent(agentId)}/limit-orders`, DryRunSchema, { body: { ...body, dry: true } });
-
-const LimitOrderSchema = z
-  .object({
-    order_id: z.string(),
-    // open, partially_filled, filled, canceled, expired, awaiting_deposit, or another 1Click state
-    fill_status: z.string(),
-    is_payout_status_final: z.boolean().nullish(),
-    deadline: z.string().nullish(),
-  })
-  .loose();
-export type LimitOrder = z.infer<typeof LimitOrderSchema>;
-
-/** Read a resting order live from 1Click. A read: no grant, no quota. */
-export const getLimitOrder = (agentId: string, orderId: string) =>
-  call(`/v1/agents/${encodeURIComponent(agentId)}/limit-orders/${encodeURIComponent(orderId)}`, LimitOrderSchema);
-
-export const cancelLimitOrder = (agentId: string, orderId: string, grantToken: string) =>
-  call(
-    `/v1/agents/${encodeURIComponent(agentId)}/limit-orders/${encodeURIComponent(orderId)}/cancel`,
-    z.record(z.string(), z.unknown()),
-    { method: "POST", body: {}, grantToken },
-  );
-
-export type WithdrawBody = { asset: string; amount: string; chain: string; recipient: string; memo?: string; note?: string };
 
 export const withdraw = (agentId: string, body: WithdrawBody, g: GrantCall) =>
   call(`/v1/agents/${encodeURIComponent(agentId)}/withdraw`, OperationSchema, { body, ...g });
@@ -322,6 +299,12 @@ export const withdraw = (agentId: string, body: WithdrawBody, g: GrantCall) =>
 /** Withdrawal preview: needs the grant and an Idempotency-Key, like the real withdrawal. */
 export const previewWithdraw = (agentId: string, body: WithdrawBody, g: GrantCall) =>
   call(`/v1/agents/${encodeURIComponent(agentId)}/withdraw`, DryRunSchema, { body: { ...body, dry: true }, ...g });
+
+export type TransferBody = { asset: string; amount: string; recipient: string; reference?: string; note?: string };
+
+/** Send to another NEAR Intents account (e.g. another Zorro user): instant and confidential. No dry run exists. */
+export const transfer = (agentId: string, body: TransferBody, g: GrantCall) =>
+  call(`/v1/agents/${encodeURIComponent(agentId)}/transfer`, OperationSchema, { body, ...g });
 
 /** Status of any operation (op_…) or owner intent (intent_…). */
 export const operationStatus = intentStatus;

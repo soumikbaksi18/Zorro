@@ -1,10 +1,11 @@
 // Zorro database schema (SQLite via libsql + Drizzle).
-// Holds what the server needs to run bots: who owns which agent wallet,
-// the (encrypted) grant token that lets Zorro trade, bots and their activity.
-// Funds are never stored here: they live in the user's NEAR Intents agent wallet.
+// Holds what the server needs to run payments: who owns which wallet, the (encrypted)
+// grant token that lets Zorro pay within the owner's rules, payees, payments, Autopay
+// schedules and get-paid requests. Funds are never stored here: they live in the
+// user's NEAR Intents wallet.
 
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const createdAt = () =>
   integer("created_at", { mode: "timestamp_ms" })
@@ -26,6 +27,8 @@ export const users = sqliteTable("users", {
   passkeyTransports: text("passkey_transports", { mode: "json" }).$type<string[]>(),
   rpId: text("rp_id").notNull(),
   origin: text("origin").notNull(),
+  /** Public @handle so other Zorro users can pay them (optional, unique). */
+  handle: text("handle").unique(),
   createdAt: createdAt(),
 });
 
@@ -71,6 +74,8 @@ export const pendingIntents = sqliteTable(
     grantTokenCiphertext: text("grant_token_ciphertext"),
     grantTokenHash: text("grant_token_hash"),
     grantExpiresAt: integer("grant_expires_at", { mode: "timestamp_ms" }),
+    /** Extra context, e.g. which payees a policy_update approves. */
+    meta: text("meta", { mode: "json" }).$type<Record<string, unknown>>(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     createdAt: createdAt(),
   },
@@ -114,55 +119,129 @@ export const grants = sqliteTable(
   (t) => [index("grants_agent_idx").on(t.agentId)],
 );
 
-export const BOT_KINDS = ["smart_dca", "stop_loss", "trailing_stop", "tp_ladder", "grid"] as const;
-export const BOT_STATUSES = ["draft", "active", "paused", "stopped", "error"] as const;
-
-/** A strategy running for an agent. Config is validated by the bot engine (Phase 6). */
-export const bots = sqliteTable(
-  "bots",
-  {
-    id: text("id").primaryKey(), // random UUID
-    agentId: text("agent_id")
-      .notNull()
-      .references(() => agents.id, { onDelete: "cascade" }),
-    kind: text("kind", { enum: BOT_KINDS }).notNull(),
-    name: text("name").notNull(),
-    config: text("config", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
-    state: text("state", { mode: "json" }).$type<Record<string, unknown>>(), // e.g. trailing-stop peak price
-    status: text("status", { enum: BOT_STATUSES }).notNull().default("draft"),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [index("bots_agent_idx").on(t.agentId), index("bots_status_idx").on(t.status)],
-);
-
-/** Human-readable activity log: "Sold 0.5 ZEC at $612 because price fell 10% from its peak". */
-export const botEvents = sqliteTable(
-  "bot_events",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    botId: text("bot_id")
-      .notNull()
-      .references(() => bots.id, { onDelete: "cascade" }),
-    at: createdAt(),
-    level: text("level", { enum: ["info", "trade", "warn", "error"] }).notNull(),
-    message: text("message").notNull(),
-    data: text("data", { mode: "json" }).$type<Record<string, unknown>>(),
-    correlationId: text("correlation_id"),
-  },
-  (t) => [index("bot_events_bot_at_idx").on(t.botId, t.at)],
-);
-
-/** Small app-wide settings, e.g. the demo-mode price override. */
+/** Small app-wide settings, e.g. the worker heartbeat. */
 export const appState = sqliteTable("app_state", {
   key: text("key").primaryKey(),
   value: text("value", { mode: "json" }).$type<unknown>(),
   updatedAt: updatedAt(),
 });
 
+/** People and places a user pays. Each must be approved with the owner's passkey (policy destinations). */
+export const payees = sqliteTable(
+  "payees",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** "address": any wallet on a chain. "zorro": another Zorro user (instant private transfer). */
+    kind: text("kind", { enum: ["address", "zorro"] }).notNull(),
+    coinKey: text("coin_key").notNull(), // what they receive by default
+    chain: text("chain").notNull(), // withdraw chain, or "near-intents" for Zorro users
+    address: text("address").notNull(), // canonical address, or the payee's NEAR Intents account
+    handle: text("handle"), // Zorro payees: their @handle
+    status: text("status", { enum: ["pending", "approving", "approved", "removed"] }).notNull().default("pending"),
+    approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("payees_user_idx").on(t.userId)],
+);
+
+export const PAYMENT_STATUSES = ["queued", "converting", "sending", "done", "failed", "review"] as const;
+
+/**
+ * The ledger: every payment out and every payment in, with what it cost in ZEC.
+ * `state` holds the engine's progress (idempotency keys of each step).
+ */
+export const payments = sqliteTable(
+  "payments",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").notNull(),
+    direction: text("direction", { enum: ["out", "in"] }).notNull(),
+    kind: text("kind", { enum: ["pay", "transfer", "request", "deposit", "autopay"] }).notNull(),
+    payeeId: text("payee_id"),
+    scheduleId: text("schedule_id"),
+    requestId: text("request_id"),
+    counterparty: text("counterparty").notNull(), // name shown in the ledger
+    coinKey: text("coin_key").notNull(), // what the payee received / what came in
+    amount: text("amount").notNull(), // human units of coinKey
+    fundCoinKey: text("fund_coin_key").notNull(), // what left the wallet (usually zec)
+    fundAmount: text("fund_amount"), // human units actually spent / received
+    usdValue: real("usd_value"),
+    inrValue: real("inr_value"),
+    feeUsd: real("fee_usd"),
+    zecUsd: real("zec_usd"), // ZEC price at the time
+    reference: text("reference"), // short public id shown on receipts
+    note: text("note"),
+    status: text("status", { enum: PAYMENT_STATUSES }).notNull().default("queued"),
+    state: text("state", { mode: "json" }).$type<Record<string, unknown>>().notNull().default(sql`'{}'`),
+    error: text("error"),
+    completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("payments_user_idx").on(t.userId, t.createdAt), index("payments_status_idx").on(t.status)],
+);
+
+/** Autopay: a payment that repeats weekly or monthly. */
+export const schedules = sqliteTable(
+  "schedules",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    payeeId: text("payee_id")
+      .notNull()
+      .references(() => payees.id, { onDelete: "cascade" }),
+    coinKey: text("coin_key").notNull(),
+    amount: text("amount").notNull(),
+    currency: text("currency", { enum: ["COIN", "USD", "INR"] }).notNull(), // amount is in this unit
+    frequency: text("frequency", { enum: ["weekly", "monthly"] }).notNull(),
+    day: integer("day").notNull(), // weekday 0-6 (Sun-Sat) or day of month 1-28
+    note: text("note"),
+    status: text("status", { enum: ["active", "paused"] }).notNull().default("active"),
+    nextRunAt: integer("next_run_at", { mode: "timestamp_ms" }).notNull(),
+    lastRunAt: integer("last_run_at", { mode: "timestamp_ms" }),
+    warnedAt: integer("warned_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("schedules_due_idx").on(t.status, t.nextRunAt)],
+);
+
+/** Get paid: a link anyone can pay in any coin; it arrives in the wallet as ZEC. */
+export const paymentRequests = sqliteTable(
+  "payment_requests",
+  {
+    id: text("id").primaryKey(), // short public id used in the link
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").notNull(),
+    amount: text("amount").notNull(),
+    currency: text("currency", { enum: ["USD", "INR", "ZEC"] }).notNull(),
+    note: text("note"),
+    status: text("status", { enum: ["open", "pending", "paid", "cancelled", "expired"] }).notNull().default("open"),
+    payCoinKey: text("pay_coin_key"),
+    payAmountUnits: text("pay_amount_units"),
+    depositAddress: text("deposit_address"),
+    depositMemo: text("deposit_memo"),
+    depositCorrelationId: text("deposit_correlation_id"),
+    depositExpiresAt: integer("deposit_expires_at", { mode: "timestamp_ms" }),
+    paidAt: integer("paid_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("payment_requests_user_idx").on(t.userId)],
+);
+
 /**
  * Every money action sent to the Agent API. The Idempotency-Key makes retries
- * safe: after a crash we resend with the same key instead of trading twice.
+ * safe: after a crash we resend with the same key instead of paying twice.
  */
 export const operations = sqliteTable(
   "operations",
@@ -171,8 +250,8 @@ export const operations = sqliteTable(
     agentId: text("agent_id")
       .notNull()
       .references(() => agents.id, { onDelete: "cascade" }),
-    botId: text("bot_id").references(() => bots.id, { onDelete: "set null" }),
-    kind: text("kind", { enum: ["swap", "limit_order", "cancel", "withdraw", "deposit"] }).notNull(),
+    paymentId: text("payment_id"),
+    kind: text("kind", { enum: ["swap", "withdraw", "transfer", "deposit"] }).notNull(),
     correlationId: text("correlation_id"),
     status: text("status").notNull(), // Agent API status, or "SENDING" before a response
     request: text("request", { mode: "json" }).$type<Record<string, unknown>>().notNull(),

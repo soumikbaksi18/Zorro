@@ -1,18 +1,15 @@
-import { z } from "zod";
 import { AgentError } from "@/lib/agent-service";
 import { jsonRoute, readJson } from "@/lib/route";
 import { requestOrigin, requireUser } from "@/lib/session";
-import { AssetKeySchema, createDeposit } from "@/lib/wallet-service";
+import { DepositInputSchema, createDeposit } from "@/lib/wallet-service";
 
-const Body = z.object({ asset: AssetKeySchema });
-
-/** A one-time address that credits the bot wallet. Never spends anything. */
+/** A one-time address that adds funds to the wallet. Never spends anything. */
 export async function POST(request: Request) {
   return jsonRoute(async () => {
     const user = await requireUser();
     await requestOrigin();
-    const parsed = Body.safeParse(await readJson(request));
-    if (!parsed.success) throw new AgentError("Choose ZEC or USDC");
-    return createDeposit(user, parsed.data.asset);
+    const parsed = DepositInputSchema.safeParse(await readJson(request));
+    if (!parsed.success) throw new AgentError("Choose a coin");
+    return createDeposit(user, parsed.data.coinKey);
   });
 }

@@ -5,7 +5,7 @@ import { count } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { network, whoami } from "./agent-api";
 import { aiConfigured, aiPing } from "./ai";
-import { workerHeartbeat } from "./bots/runner";
+import { workerHeartbeat } from "./worker";
 import { encryptionConfigured } from "./crypto";
 import { getTokens } from "./oneclick";
 

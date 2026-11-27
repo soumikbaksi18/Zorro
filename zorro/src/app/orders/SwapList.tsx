@@ -33,7 +33,7 @@ export function SwapList() {
           <li key={s.id}>
             <Link
               href={`/swap/${encodeURIComponent(s.id)}`}
-              className="panel flex items-center justify-between gap-3 p-4 transition-colors hover:border-fox/60 hover:bg-fox/5"
+              className="panel flex items-center justify-between gap-3 p-4 transition-colors hover:border-zec/60 hover:bg-zec/5"
             >
               <div className="min-w-0">
                 <p className="font-medium">
