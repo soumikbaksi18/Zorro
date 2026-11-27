@@ -36,7 +36,7 @@ export function Receipt({ id }: { id: string }) {
   }, [id]);
 
   if (error && !p) return <ErrorBox message={error} />;
-  if (!p) return <div className="h-72 animate-pulse rounded-[26px] bg-cream/20" />;
+  if (!p) return <div className="h-72 animate-pulse rounded-[26px] bg-tint-1/20" />;
 
   const c = coin(p.coinKey);
   const fund = coin(p.fundCoinKey);
@@ -51,23 +51,23 @@ export function Receipt({ id }: { id: string }) {
 
       <article className="receipt receipt-1" aria-label="Receipt">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-medium text-zec-ink/60">{out ? `Paid to ${p.counterparty}` : `From ${p.counterparty}`}</p>
-          <span className="rounded-full bg-zec-ink/8 px-2.5 py-1 text-xs font-medium text-zec-ink/70">{out ? `Paid in ${c.symbol}` : `Arrived as ${c.symbol}`}</span>
+          <p className="text-sm font-medium text-brand-ink/60">{out ? `Paid to ${p.counterparty}` : `From ${p.counterparty}`}</p>
+          <span className="rounded-full bg-brand-ink/8 px-2.5 py-1 text-xs font-medium text-brand-ink/70">{out ? `Paid in ${c.symbol}` : `Arrived as ${c.symbol}`}</span>
         </div>
         <p className="tabular mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em]">
           {out ? "" : "+"}
           {fmt(p.usd, p.inr)}
         </p>
-        <p className="tabular mt-2 text-sm text-zec-ink/70">
+        <p className="tabular mt-2 text-sm text-brand-ink/70">
           {displayAmount(p.amount)} {coinName(c)}
         </p>
         <div className="mt-6 grid grid-cols-2 gap-4 text-xs">
           <div>
-            <p className="text-zec-ink/55">Reference</p>
+            <p className="text-brand-ink/55">Reference</p>
             <p className="mt-0.5 font-mono text-[13px] font-medium">{p.reference ?? "—"}</p>
           </div>
           <div>
-            <p className="text-zec-ink/55">Date</p>
+            <p className="text-brand-ink/55">Date</p>
             <p className="mt-0.5 text-[13px] font-medium">{date.toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })}</p>
           </div>
         </div>
@@ -151,11 +151,11 @@ function Steps({ p }: { p: PaymentView }) {
           <li key={s.key} className="flex items-center gap-3 text-sm">
             <span
               className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border ${
-                done ? "border-up bg-up text-ink" : current ? "border-zec text-zec" : "border-line-strong text-dim"
+                done ? "border-up bg-up text-ink" : current ? "border-brand text-brand" : "border-line-strong text-dim"
               }`}
               aria-hidden="true"
             >
-              {done ? <Check size={14} /> : current ? <span className="h-2 w-2 animate-pulse rounded-full bg-zec" /> : <span className="h-1.5 w-1.5 rounded-full bg-dim" />}
+              {done ? <Check size={14} /> : current ? <span className="h-2 w-2 animate-pulse rounded-full bg-brand" /> : <span className="h-1.5 w-1.5 rounded-full bg-dim" />}
             </span>
             <span className={done ? "" : current ? "text-snow" : "text-muted"}>{s.label}</span>
           </li>

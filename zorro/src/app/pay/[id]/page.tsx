@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Receipt · Zorro" };
 
 export default function ReceiptPage({ params }: PageProps<"/pay/[id]">) {
   return (
-    <Suspense fallback={<div className="h-72 animate-pulse rounded-[26px] bg-cream/20" />}>
+    <Suspense fallback={<div className="h-72 animate-pulse rounded-[26px] bg-tint-1/20" />}>
       <ReceiptLoader params={params} />
     </Suspense>
   );

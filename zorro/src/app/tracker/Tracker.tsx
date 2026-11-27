@@ -6,7 +6,9 @@ import { api } from "@/lib/api-client";
 import { useAccount } from "@/lib/account-client";
 import { coin, displayAmount } from "@/lib/coins";
 import type { MonthSummary, PaymentView } from "@/lib/payments";
-import { CoinBadge, StatusBadge, coinName, useFiat } from "@/components/money";
+import { CoinBadge, StatusBadge, coinName, useFiat, useNow } from "@/components/money";
+import { SpendChart } from "@/components/SpendChart";
+import { formatFiat } from "@/lib/format";
 import { ErrorBox } from "@/components/ui";
 import { PasskeyGate } from "@/components/wallet/PasskeyGate";
 
@@ -31,7 +33,9 @@ export function Tracker() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [shown, setShown] = useState(20);
-  const { fmt } = useFiat();
+  const [mode, setMode] = useState<"out" | "in">("out");
+  const { fmt, currency } = useFiat();
+  const now = useNow();
   const hasWallet = account.status === "ready" && account.me.agent?.status === "ACTIVE";
 
   useEffect(() => {
@@ -67,8 +71,42 @@ export function Tracker() {
 
   return (
     <div className="flex flex-col gap-6">
+      <section className="panel-hero p-5" aria-labelledby="stat-heading">
+        <p id="stat-heading" className="text-center text-sm text-muted">
+          {mode === "out" ? `Spent in ${monthName}` : `Received in ${monthName}`}
+        </p>
+        <p className="tabular mt-1 text-center text-[34px] leading-tight font-semibold tracking-[-0.03em]">
+          {mode === "out" ? fmt(summary.sentUsd, summary.sentInr) : fmt(summary.receivedUsd, summary.receivedInr)}
+        </p>
+        <div className="mt-4">
+          {now ? (
+            <SpendChart payments={data.payments} mode={mode} now={now} currency={currency} format={(v) => formatFiat(v, currency, { compact: true })} />
+          ) : (
+            <div className="h-[170px] animate-pulse rounded-2xl bg-white/5" />
+          )}
+        </div>
+        <div className="mx-auto mt-4 flex max-w-[260px] rounded-full bg-white/[0.07] p-1" role="group" aria-label="Show">
+          {(
+            [
+              ["in", "Income"],
+              ["out", "Spend"],
+            ] as const
+          ).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setMode(v)}
+              aria-pressed={mode === v}
+              className={`min-h-11 flex-1 rounded-full text-sm font-semibold transition-colors ${mode === v ? "bg-brand text-brand-ink" : "text-snow/70 hover:text-snow"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <div className="grid grid-cols-2 gap-3">
-        <StatCard title={`Spent in ${monthName}`} value={fmt(summary.sentUsd, summary.sentInr)} sub={`${displayAmount(summary.zecSpent)} ZEC`} />
+        <StatCard title="ZEC spent" value={`${displayAmount(summary.zecSpent)} ZEC`} sub={`${summary.count} payments in ${monthName}`} />
         <StatCard
           title="Today's limit"
           value={fmt(spentToday, inr(spentToday))}
@@ -157,26 +195,26 @@ function ReceiptCard({ p, shade }: { p: PaymentView; shade: number }) {
     <Link href={`/pay/${p.id}`} className={`receipt receipt-${shade} relative block shadow-[0_-12px_30px_-18px_rgba(0,0,0,0.6)] transition-transform hover:-translate-y-0.5`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-zec-ink/65">{out ? p.counterparty : `From ${p.counterparty}`}</p>
+          <p className="truncate text-sm font-medium text-brand-ink/65">{out ? p.counterparty : `From ${p.counterparty}`}</p>
           <p className={`tabular mt-1 text-[34px] leading-tight font-semibold tracking-[-0.04em] ${p.status === "failed" ? "line-through opacity-50" : ""}`}>
             {out ? "" : "+"}
             {fmt(p.usd, p.inr)}
           </p>
         </div>
-        <span className="mt-1 shrink-0 text-[13px] font-medium text-zec-ink/60">{tag}</span>
+        <span className="mt-1 shrink-0 text-[13px] font-medium text-brand-ink/60">{tag}</span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
         <div>
-          <p className="text-zec-ink/55">Reference</p>
+          <p className="text-brand-ink/55">Reference</p>
           <p className="mt-0.5 truncate font-mono font-medium">{p.reference ?? "—"}</p>
         </div>
         <div>
-          <p className="text-zec-ink/55">{p.status === "done" ? "Date" : "Status"}</p>
+          <p className="text-brand-ink/55">{p.status === "done" ? "Date" : "Status"}</p>
           <p className="mt-0.5 font-medium">
             {p.status === "done" ? (
               new Date(p.completedAt ?? p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
             ) : (
-              <span className="[&_*]:!text-zec-ink">
+              <span className="[&_*]:!text-brand-ink">
                 <StatusBadge status={p.status} />
               </span>
             )}
@@ -198,7 +236,7 @@ function StatCard({ title, value, sub, pct }: { title: string; value: string; su
           <div className="meter flex-1">
             <span style={{ width: `${Math.max(2, pct)}%` }} />
           </div>
-          <span className="rounded-full bg-zec/15 px-1.5 py-0.5 text-[10px] font-semibold text-zec">{Math.round(pct)}%</span>
+          <span className="rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">{Math.round(pct)}%</span>
         </div>
       )}
     </section>
@@ -222,7 +260,7 @@ function TrackerSkeleton() {
         <div className="panel h-32 animate-pulse" />
       </div>
       <div className="panel h-40 animate-pulse" />
-      <div className="h-40 animate-pulse rounded-[26px] bg-cream/15" />
+      <div className="h-40 animate-pulse rounded-[26px] bg-tint-1/15" />
     </div>
   );
 }

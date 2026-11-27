@@ -101,21 +101,17 @@ export function HomeScreen() {
 
 function Greeting({ handle, alerts }: { handle: string | null; alerts: number }) {
   return (
-    <header className="flex items-center justify-between">
-      <Link href="/account" className="flex items-center gap-3">
-        <BrandMark size={44} />
-        <span className="text-[19px] font-light text-snow/80">
-          Hello{handle ? <strong className="font-medium text-snow">, @{handle}</strong> : <strong className="font-medium text-snow">!</strong>}
-        </span>
-      </Link>
-      <Link
-        href={alerts ? "/payees" : "/tracker"}
-        aria-label={alerts ? `${alerts} payees waiting for approval` : "Payment tracker"}
-        className="relative grid h-11 w-11 place-items-center rounded-full bg-white/8 text-snow backdrop-blur hover:bg-white/12"
-      >
-        <Bell size={19} strokeWidth={1.7} aria-hidden="true" />
-        {alerts > 0 && <span className="absolute top-2.5 right-3 h-2 w-2 rounded-full bg-zec ring-2 ring-ink" />}
-      </Link>
+    <header>
+      <div className="flex items-center justify-between">
+        <Link href="/account" aria-label="Account">
+          <BrandMark size={46} />
+        </Link>
+        <Link href={alerts ? "/payees" : "/tracker"} aria-label={alerts ? `${alerts} payees waiting for approval` : "Payment tracker"} className="icon-btn relative">
+          <Bell size={19} strokeWidth={1.7} aria-hidden="true" />
+          {alerts > 0 && <span className="absolute top-2.5 right-3 h-2 w-2 rounded-full bg-gold ring-2 ring-ink" />}
+        </Link>
+      </div>
+      <h2 className="page-title mt-5">{handle ? `Hi, @${handle}` : "Your wallet"}</h2>
     </header>
   );
 }
@@ -126,70 +122,58 @@ function Balance({ data, error }: { data: HomeData | null; error: string | null 
   const b = data?.balances;
   const total = b ? (currency === "INR" ? b.totalInr : b.totalUsd) : null;
   const zec = b?.coins.find((c) => c.key === "zec");
+  const others = b?.coins.filter((c) => c.key !== "zec") ?? [];
 
   return (
-    <section aria-labelledby="balance-heading" className="flex flex-col gap-5">
-      <div>
-        <div className="flex items-center gap-2">
-          <h2 id="balance-heading" className="text-[15px] text-snow/70">
-            Total balance
+    <section aria-labelledby="balance-heading" className="flex flex-col gap-4">
+      <article className="glass-card flex min-h-[210px] flex-col justify-between p-5">
+        <span aria-hidden="true" className="pointer-events-none absolute top-[58px] right-[-8px] text-[88px] leading-none font-semibold tracking-[-0.06em] text-white/22 select-none">
+          zorro
+        </span>
+        <div className="relative flex items-center justify-between">
+          <h2 id="balance-heading" className="rounded-full bg-white/55 px-3 py-1 text-xs font-semibold">
+            Main wallet (ZEC)
           </h2>
-          <button type="button" onClick={toggle} aria-label={hidden ? "Show balance" : "Hide balance"} className="text-muted hover:text-snow">
-            {hidden ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
+          <button type="button" onClick={toggle} aria-label={hidden ? "Show balance" : "Hide balance"} className="grid h-9 w-9 place-items-center rounded-full bg-white/40 hover:bg-white/60">
+            {hidden ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
           </button>
         </div>
-        <p className="mt-1 text-[44px] leading-tight font-semibold">
-          {total === null ? <span className="inline-block h-11 w-48 animate-pulse rounded-xl bg-white/8 align-middle" /> : <BigFiat value={total} currency={currency} hidden={hidden} />}
-        </p>
-        {error && !b && <p className="mt-1 text-sm text-down">{error}</p>}
-        {zec && !hidden && (
-          <p className="tabular mt-1 text-sm text-snow/60">
-            {Number(zec.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ZEC
+        <div className="relative">
+          <p className="text-[40px] leading-tight font-semibold">
+            {total === null ? <span className="inline-block h-10 w-44 animate-pulse rounded-xl bg-white/40 align-middle" /> : <BigFiat value={total} currency={currency} hidden={hidden} dim="text-brand-ink/45" />}
+          </p>
+          {error && !b && <p className="mt-1 text-sm text-down">{error}</p>}
+          <p className="tabular mt-1 text-sm font-medium text-brand-ink/70">
+            {zec && !hidden ? `${Number(zec.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ZEC` : currency === "INR" ? "Indian Rupee" : "US Dollar"}
             {b?.zecUsd ? ` · 1 ZEC = ${fmt(b.zecUsd, b.zecUsd * b.usdInr)}` : ""}
           </p>
-        )}
-      </div>
+        </div>
+      </article>
 
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="section-title">Wallet</h2>
-          <Link href="/wallet/receive" className="flex items-center gap-1 text-sm text-snow/80 hover:text-snow">
-            Add <Plus size={15} aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
-          {b
-            ? b.coins.map((c, i) => <CoinCard key={c.key} coin={c} primary={i === 0} hidden={hidden} fiat={fmt(c.usd, c.inr)} />)
-            : [0, 1].map((i) => <div key={i} className="h-[170px] w-[160px] shrink-0 animate-pulse rounded-[22px] bg-white/6" />)}
-          <Link
-            href="/wallet/receive"
-            className="grid h-[170px] w-[120px] shrink-0 snap-start place-items-center rounded-[22px] border border-dashed border-line-strong text-sm text-muted hover:border-zec hover:text-snow"
-          >
-            <span className="flex flex-col items-center gap-2">
-              <Plus size={20} aria-hidden="true" />
-              Add money
-            </span>
-          </Link>
-        </div>
+      <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
+        {others.map((c) => (
+          <CoinCard key={c.key} coin={c} hidden={hidden} fiat={fmt(c.usd, c.inr)} />
+        ))}
+        <Link
+          href="/wallet/receive"
+          className="flex h-[76px] shrink-0 snap-start items-center gap-3 rounded-[22px] border border-dashed border-line-strong px-5 text-sm text-muted hover:border-brand hover:text-snow"
+        >
+          <Plus size={18} aria-hidden="true" />
+          Add money
+        </Link>
       </div>
     </section>
   );
 }
 
-function CoinCard({ coin: c, primary, hidden, fiat }: { coin: WalletBalances["coins"][number]; primary: boolean; hidden: boolean; fiat: string }) {
+function CoinCard({ coin: c, hidden, fiat }: { coin: WalletBalances["coins"][number]; hidden: boolean; fiat: string }) {
   const meta = findCoin(c.key);
   return (
-    <article className={`${primary ? "glass-card" : "glass-card-dark"} flex h-[170px] w-[160px] shrink-0 snap-start flex-col justify-between p-4`}>
-      <div className="flex items-start justify-between">
-        <CoinBadge coinKey={c.key} size={30} />
-        <span className={`text-xs font-semibold tracking-wide ${primary ? "text-zec-ink/70" : "text-snow/60"}`}>{meta?.chainName}</span>
-      </div>
-      <div>
-        <p className={`text-[11px] ${primary ? "text-zec-ink/70" : "text-snow/60"}`}>{primary ? "Private cash" : coinName(meta)}</p>
-        <p className="tabular mt-0.5 text-[22px] leading-tight font-semibold tracking-[-0.03em]">{hidden ? "••••" : fiat}</p>
-        <p className={`tabular mt-1 text-[11px] ${primary ? "text-zec-ink/70" : "text-snow/60"}`}>
-          {hidden ? "••••" : `${Number(c.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ${c.symbol}`}
-        </p>
+    <article className="glass-card-dark flex h-[76px] w-[190px] shrink-0 snap-start items-center gap-3 px-4">
+      <CoinBadge coinKey={c.key} size={34} />
+      <div className="min-w-0">
+        <p className="tabular truncate text-[15px] font-semibold">{hidden ? "••••" : fiat}</p>
+        <p className="tabular truncate text-[11px] text-snow/60">{hidden ? "••••" : `${Number(c.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ${coinName(meta)}`}</p>
       </div>
     </article>
   );
@@ -205,8 +189,8 @@ function QuickActions() {
         {ACTIONS.map(({ href, label, icon: Icon }) => (
           <li key={href}>
             <Link href={href} className="group flex flex-col items-center gap-2 text-center text-xs text-snow/75 hover:text-snow">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl text-zec-light transition-colors group-hover:bg-white/6">
-                <Icon size={23} strokeWidth={1.6} aria-hidden="true" />
+              <span className="grid h-12 w-12 place-items-center rounded-full bg-brand/12 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-ink">
+                <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
               </span>
               {label}
             </Link>
@@ -222,10 +206,10 @@ function LastPayments({ items }: { items: PaymentView[] | null }) {
     <section aria-labelledby="last-heading">
       <div className="mb-3 flex items-center justify-between">
         <h2 id="last-heading" className="section-title">
-          Last payments
+          Transactions
         </h2>
-        <Link href="/tracker" className="flex items-center gap-1 text-sm text-zec hover:text-zec-light">
-          View all <ArrowUpRight size={14} aria-hidden="true" />
+        <Link href="/tracker" className="flex items-center gap-1 text-sm text-brand hover:text-brand-light">
+          See all <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
       </div>
       {items === null ? (
@@ -237,16 +221,16 @@ function LastPayments({ items }: { items: PaymentView[] | null }) {
       ) : items.length === 0 ? (
         <div className="panel p-5 text-center text-sm text-muted">
           No payments yet.{" "}
-          <Link href="/wallet/receive" className="text-zec">
+          <Link href="/wallet/receive" className="text-brand">
             Add ZEC
           </Link>{" "}
           and make your first payment.
         </div>
       ) : (
         <ul className="flex flex-col gap-2.5">
-          {items.map((p) => (
+          {items.map((p, i) => (
             <li key={p.id}>
-              <PaymentRow p={p} />
+              <PaymentRow p={p} highlight={i === 0} />
             </li>
           ))}
         </ul>
@@ -255,35 +239,37 @@ function LastPayments({ items }: { items: PaymentView[] | null }) {
   );
 }
 
-export function PaymentRow({ p }: { p: PaymentView }) {
+export function PaymentRow({ p, highlight = false }: { p: PaymentView; highlight?: boolean }) {
   const { fmt } = useFiat();
   const now = useNow();
   const c = findCoin(p.coinKey);
   const out = p.direction === "out";
   const kindLabel = { pay: "Payment", transfer: "Zorro transfer", autopay: "Autopay", request: "Payment link", deposit: "Added" }[p.kind] ?? p.kind;
   return (
-    <Link href={`/pay/${p.id}`} className="panel flex items-center gap-3 p-3.5 transition-colors hover:border-line-strong">
-      <span className="relative">
-        <CoinBadge coinKey={p.coinKey} size={40} />
-        <span
-          className={`absolute -right-1 -bottom-1 grid h-[18px] w-[18px] place-items-center rounded-full ring-2 ring-panel ${out ? "bg-surface-2 text-snow" : "bg-up text-ink"}`}
-          aria-hidden="true"
-        >
-          {out ? <ArrowUpRight size={11} /> : <ArrowDownLeft size={11} />}
-        </span>
+    <Link
+      href={`/pay/${p.id}`}
+      className={`flex items-center gap-3 rounded-[22px] border border-white/6 p-3.5 transition-colors ${
+        highlight ? "bg-gradient-to-r from-[#24402a] to-[#3f6b34]" : "bg-white/[0.05] hover:bg-white/[0.08]"
+      }`}
+    >
+      <span
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${out ? "border border-white/25 text-snow/80" : "bg-brand text-brand-ink"}`}
+        aria-hidden="true"
+      >
+        {out ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block truncate text-[15px] font-medium">{p.counterparty}</strong>
-        <span className="block truncate text-xs text-muted">
+        <span className="block truncate text-xs text-snow/55">
           {when(p.createdAt, now)} · {p.status === "done" ? kindLabel : p.status === "failed" ? "Failed" : "In progress"}
         </span>
       </span>
       <span className="text-right">
-        <strong className={`tabular block text-[15px] font-medium ${p.status === "failed" ? "text-dim line-through" : out ? "" : "text-up"}`}>
+        <strong className={`tabular block text-[15px] font-semibold ${p.status === "failed" ? "text-dim line-through" : out ? "" : "text-brand"}`}>
           {out ? "−" : "+"}
           {fmt(p.usd, p.inr)}
         </strong>
-        <span className="tabular block text-xs text-muted">
+        <span className="tabular block text-xs text-snow/55">
           {Number(p.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {c?.symbol}
         </span>
       </span>
@@ -294,12 +280,12 @@ export function PaymentRow({ p }: { p: PaymentView }) {
 function CreateWalletCard({ pending }: { pending: boolean }) {
   return (
     <section className="glass-card p-6">
-      <p className="text-sm font-medium text-zec-ink/70">Step 2 of 2</p>
+      <p className="text-sm font-medium text-brand-ink/70">Step 2 of 2</p>
       <h2 className="mt-2 text-2xl leading-tight font-semibold tracking-[-0.03em]">Create your private Zorro wallet</h2>
-      <p className="mt-2 text-sm leading-relaxed text-zec-ink/80">
+      <p className="mt-2 text-sm leading-relaxed text-brand-ink/80">
         One Face ID. Hold ZEC, pay anyone in the coin they want, and set up Autopay. Zorro can only pay people you approve, up to your daily limit.
       </p>
-      <Link href="/wallet/setup" className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zec-ink px-6 text-sm font-semibold text-zec">
+      <Link href="/wallet/setup" className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-ink px-6 text-sm font-semibold text-brand">
         {pending ? "Finish setting up" : "Create wallet"}
       </Link>
     </section>
@@ -314,7 +300,7 @@ function Welcome() {
         <h2 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.04em]">
           Private cash.
           <br />
-          <span className="text-zec">Pay in any coin.</span>
+          <span className="text-brand">Pay in any coin.</span>
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-snow/70">
           Hold ZEC and pay anyone, in USDC, SOL, BTC or whatever they want. Autopay your regular payments and track every one.
@@ -327,7 +313,7 @@ function Welcome() {
           "Every payee approved with your Face ID",
         ].map((t) => (
           <li key={t} className="flex items-center gap-3">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-zec/15 text-zec">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-brand/15 text-brand">
               <ShieldCheck size={14} aria-hidden="true" />
             </span>
             {t}

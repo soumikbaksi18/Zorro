@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeftRight, ChevronLeft, ChevronRight, HandCoins, Plus, Repeat, ScanLine, Search, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, ChevronRight, HandCoins, Plus, Repeat, ScanLine, Search, type LucideIcon } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAccount } from "@/lib/account-client";
 import { shortAddress } from "@/lib/addresses";
@@ -53,7 +53,7 @@ export function PayHub() {
         <PageHeader title="Pay" />
         <div className="panel p-5 text-sm">
           Create your wallet first.{" "}
-          <Link href="/wallet/setup" className="text-zec">
+          <Link href="/wallet/setup" className="text-brand">
             Create wallet
           </Link>
         </div>
@@ -66,14 +66,19 @@ export function PayHub() {
     return (
       <>
         <header className="mb-6">
-          <button type="button" onClick={() => router.push("/pay")} className="-ml-1 mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-snow">
-            <ChevronLeft size={18} aria-hidden="true" /> Pay
+          <button type="button" onClick={() => router.push("/pay")} aria-label="Back to Pay" className="icon-btn mb-4">
+            <ArrowLeft size={19} aria-hidden="true" />
           </button>
-          <div className="flex items-center gap-3">
-            <PayeeAvatar name={selected.name} coinKey={selected.coinKey} size={52} />
+          <h1 className="page-title">
+            Sending
+            <br />
+            <span className="pl-10">money</span>
+          </h1>
+          <div className="mt-5 flex items-center gap-3 rounded-full bg-white/[0.06] p-1.5 pr-4">
+            <PayeeAvatar name={selected.name} coinKey={selected.coinKey} size={40} />
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">{selected.name}</h1>
-              <p className="truncate text-sm text-muted">
+              <p className="truncate text-[15px] font-semibold">{selected.name}</p>
+              <p className="truncate text-xs text-muted">
                 Receives {coinName(findCoin(selected.coinKey))} · {selected.kind === "zorro" ? `@${selected.handle}` : shortAddress(selected.address, 6)}
               </p>
             </div>
@@ -92,7 +97,7 @@ export function PayHub() {
         title="Pay"
         lead="Pay anyone in the coin they want. Zorro converts your ZEC at the moment you pay."
         action={
-          <Link href="/scan" aria-label="Scan to pay" className="grid h-11 w-11 place-items-center rounded-full bg-zec text-zec-ink">
+          <Link href="/scan" aria-label="Scan to pay" className="grid h-11 w-11 place-items-center rounded-full bg-brand text-brand-ink">
             <ScanLine size={20} aria-hidden="true" />
           </Link>
         }
@@ -109,7 +114,7 @@ export function PayHub() {
             <h2 id="payees-heading" className="section-title">
               Payees
             </h2>
-            <Link href="/payees" className="text-sm text-zec hover:text-zec-light">
+            <Link href="/payees" className="text-sm text-brand hover:text-brand-light">
               Manage
             </Link>
           </div>
@@ -119,7 +124,7 @@ export function PayHub() {
             <ul className="grid grid-cols-4 gap-y-4">
               <li>
                 <Link href="/payees" className="flex flex-col items-center gap-2 text-center text-xs text-snow/80">
-                  <span className="grid h-[52px] w-[52px] place-items-center rounded-full border border-dashed border-zec/60 text-zec">
+                  <span className="grid h-[52px] w-[52px] place-items-center rounded-full border border-dashed border-brand/60 text-brand">
                     <Plus size={20} aria-hidden="true" />
                   </span>
                   New
@@ -146,7 +151,7 @@ export function PayHub() {
           {MORE.map(({ href, label, note, icon: Icon }) => (
             <li key={href}>
               <Link href={href} className="flex items-center gap-3 p-4 hover:bg-white/3">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-zec/12 text-zec">
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand/12 text-brand">
                   <Icon size={19} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">

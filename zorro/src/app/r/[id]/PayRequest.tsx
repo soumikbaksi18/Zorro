@@ -65,9 +65,9 @@ export function PayRequest({ id }: { id: string }) {
       </header>
 
       <section className="glass-card p-6">
-        <p className="text-sm font-medium text-zec-ink/70">{req.note ?? "Amount"}</p>
+        <p className="text-sm font-medium text-brand-ink/70">{req.note ?? "Amount"}</p>
         <p className="tabular mt-1 text-[44px] leading-none font-semibold tracking-[-0.04em]">{amountText(req)}</p>
-        {req.usd !== null && req.currency !== "USD" && <p className="tabular mt-2 text-sm text-zec-ink/70">≈ ${req.usd.toFixed(2)}</p>}
+        {req.usd !== null && req.currency !== "USD" && <p className="tabular mt-2 text-sm text-brand-ink/70">≈ ${req.usd.toFixed(2)}</p>}
       </section>
 
       {req.status === "paid" ? (
@@ -120,13 +120,13 @@ function Deposit({ req, onChange }: { req: PublicRequest; onChange: () => void }
         <CopyButton value={d.address} label="Copy address" />
         <CopyButton value={d.amount} label="Copy amount" />
         {d.uri && (
-          <a href={d.uri} className="shrink-0 rounded-full bg-zec px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-zec-ink uppercase">
+          <a href={d.uri} className="shrink-0 rounded-full bg-brand px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-brand-ink uppercase">
             Open wallet
           </a>
         )}
       </div>
-      <p className="flex items-center gap-2 text-sm text-zec">
-        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-zec" aria-hidden="true" /> Waiting for your payment…
+      <p className="flex items-center gap-2 text-sm text-brand">
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" /> Waiting for your payment…
       </p>
       <ul className="w-full text-left text-xs leading-relaxed text-muted">
         <li>• Only send {coinName(c)}. Other coins or chains are lost.</li>

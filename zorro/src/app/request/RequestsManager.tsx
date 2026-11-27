@@ -51,7 +51,7 @@ export function RequestsManager() {
     return (
       <div className="panel p-5 text-sm">
         Create your wallet first.{" "}
-        <Link href="/wallet/setup" className="text-zec">
+        <Link href="/wallet/setup" className="text-brand">
           Create wallet
         </Link>
       </div>
@@ -110,7 +110,7 @@ export function RequestsManager() {
       ) : (
         <section className="panel flex flex-col gap-4 p-5" aria-labelledby="new-req-heading">
           <h2 id="new-req-heading" className="section-title flex items-center gap-2">
-            <HandCoins size={18} className="text-zec" aria-hidden="true" /> New link
+            <HandCoins size={18} className="text-brand" aria-hidden="true" /> New link
           </h2>
           <label className="block">
             <span className="mb-2 block text-sm font-medium">Amount</span>

@@ -29,7 +29,7 @@ export function SetupFlow() {
     return (
       <div className="panel p-5 text-sm">
         You already have a Zorro wallet.{" "}
-        <Link href="/" className="text-zec">
+        <Link href="/" className="text-brand">
           Go to Home
         </Link>
       </div>
@@ -77,8 +77,8 @@ export function SetupFlow() {
       <section className="glass-card p-6 text-center">
         <CircleCheck size={40} strokeWidth={1.6} className="mx-auto" aria-hidden="true" />
         <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">Your wallet is ready</h2>
-        <p className="mt-2 text-sm text-zec-ink/80">Add ZEC, approve the people you pay, and you&apos;re set.</p>
-        <Link href="/wallet/receive" className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zec-ink text-sm font-semibold text-zec">
+        <p className="mt-2 text-sm text-brand-ink/80">Add ZEC, approve the people you pay, and you&apos;re set.</p>
+        <Link href="/wallet/receive" className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-ink text-sm font-semibold text-brand">
           Add ZEC
         </Link>
         <Link href="/" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-sm font-medium">
@@ -91,7 +91,7 @@ export function SetupFlow() {
   if (stage.kind === "working") {
     return (
       <section className="panel-hero p-6 text-center" aria-live="polite">
-        <span className="mx-auto block h-9 w-9 animate-spin rounded-full border-2 border-line border-t-zec" aria-hidden="true" />
+        <span className="mx-auto block h-9 w-9 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" />
         <p className="mt-4 text-sm">{stage.step}</p>
         <p className="mt-1 text-xs text-muted">This usually takes under a minute.</p>
       </section>
@@ -130,7 +130,7 @@ export function SetupFlow() {
               type="button"
               onClick={() => setLimit(b)}
               aria-pressed={limit === b}
-              className={`min-h-10 flex-1 rounded-full text-sm font-medium transition-colors ${limit === b ? "bg-zec text-zec-ink" : "text-muted hover:text-snow"}`}
+              className={`min-h-10 flex-1 rounded-full text-sm font-medium transition-colors ${limit === b ? "bg-brand text-brand-ink" : "text-muted hover:text-snow"}`}
             >
               {b === "custom" ? "Custom" : `$${b}`}
             </button>

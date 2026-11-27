@@ -19,7 +19,7 @@ export function CopyButton({ value, label = "Copy" }: { value: string; label?: s
           /* clipboard blocked; the value is still visible to copy by hand */
         }
       }}
-      className="shrink-0 rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-snow/90 uppercase hover:border-zec-light"
+      className="shrink-0 rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-snow/90 uppercase hover:border-brand-light"
     >
       {copied ? "Copied" : label}
     </button>
@@ -70,7 +70,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
           className={`min-h-10 flex-1 rounded-full text-sm font-medium transition-colors ${
-            value === o.value ? "bg-zec text-zec-ink" : "text-muted hover:text-snow"
+            value === o.value ? "bg-brand text-brand-ink" : "text-muted hover:text-snow"
           }`}
         >
           {o.label}
@@ -91,7 +91,7 @@ export function ErrorBox({ message }: { message: string }) {
 export function Spinner({ label }: { label?: string }) {
   return (
     <span className="inline-flex items-center gap-2 text-sm text-muted" role="status">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-zec" aria-hidden="true" />
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" />
       {label}
     </span>
   );

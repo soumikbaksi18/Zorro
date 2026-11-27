@@ -22,7 +22,7 @@ export function SettingsPanel() {
               key={c}
               onClick={() => setCurrency(c)}
               aria-pressed={currency === c}
-              className={`rounded-full px-3 py-1.5 transition-colors ${currency === c ? "bg-zec text-zec-ink" : "text-muted"}`}
+              className={`rounded-full px-3 py-1.5 transition-colors ${currency === c ? "bg-brand text-brand-ink" : "text-muted"}`}
             >
               {c}
             </button>

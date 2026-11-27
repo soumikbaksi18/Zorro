@@ -2,18 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowDown, Info, Send } from "lucide-react";
+import { ArrowDownUp, Info } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useCurrency } from "@/lib/client-prefs";
 import { coin, displayAmount } from "@/lib/coins";
 import type { PaymentQuote } from "@/lib/payments";
 import type { PayeeView } from "@/lib/payees";
+import { SlideToConfirm } from "@/components/SlideToConfirm";
 import { coinName, useFiat } from "@/components/money";
 import { ErrorBox, Segmented } from "@/components/ui";
 
 type Quote = Omit<PaymentQuote, "plan">;
 type Currency = "COIN" | "INR" | "USD";
 
+/** "Sending money": what you send, what they get, fees and rate, then slide to pay. */
 export function PayForm({ payee, initialAmount, initialCurrency }: { payee: PayeeView; initialAmount: string; initialCurrency: string | null }) {
   const router = useRouter();
   const [pref] = useCurrency();
@@ -54,6 +56,7 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
   const q = quote?.key === key ? quote.value : null;
   const qError = quoteError?.key === key ? quoteError.message : null;
   const loading = valid && !q && !qError;
+  const inrPerUsd = q && q.usd > 0 ? q.inr / q.usd : null;
 
   async function pay() {
     if (!q) return;
@@ -68,39 +71,73 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
     }
   }
 
-  const symbol = currency === "COIN" ? c.symbol : currency === "INR" ? "₹" : "$";
   return (
     <div className="flex flex-col gap-5">
-      <section className="panel-hero p-5">
-        <label className="block">
-          <span className="text-sm text-snow/70">Amount</span>
-          <span className="mt-1 flex items-baseline gap-2">
-            {currency !== "COIN" && <span className="text-[40px] font-semibold text-snow/50">{symbol}</span>}
+      <section className="sheet-light p-4" aria-label="Sending money">
+        <div className="sheet-box p-4">
+          <label htmlFor="pay-amount" className="text-[13px] font-medium text-brand-ink/70">
+            You send
+          </label>
+          <div className="mt-1 flex items-center gap-2">
             <input
+              id="pay-amount"
               inputMode="decimal"
               autoFocus
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
               placeholder="0"
               aria-label="Amount"
-              className="tabular w-full min-w-0 bg-transparent text-[44px] leading-tight font-semibold tracking-[-0.04em] caret-zec outline-none placeholder:text-snow/25 focus-visible:outline-none"
+              className="tabular w-full min-w-0 bg-transparent text-[30px] leading-tight font-semibold tracking-[-0.03em] caret-brand-dark outline-none placeholder:text-brand-ink/30 focus-visible:outline-none"
             />
-            {currency === "COIN" && <span className="text-xl font-semibold text-snow/60">{c.symbol}</span>}
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              aria-label="Currency of the amount"
+              className="shrink-0 rounded-full bg-white/70 px-3 py-2 text-sm font-semibold text-brand-ink outline-none"
+            >
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="COIN">{c.symbol}</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="my-2.5 flex justify-center">
+          <span className="grid h-9 w-9 place-items-center rounded-full border border-brand-ink/20 text-brand-ink/70" aria-hidden="true">
+            <ArrowDownUp size={16} />
           </span>
-        </label>
-        <div className="mt-4">
-          <Segmented
-            label="Amount is in"
-            value={currency}
-            onChange={setCurrency}
-            options={[
-              { value: "INR", label: "₹ INR" },
-              { value: "USD", label: "$ USD" },
-              { value: "COIN", label: c.symbol },
-            ]}
-          />
+        </div>
+
+        <div className="sheet-box p-4 text-center" aria-live="polite" aria-busy={loading}>
+          <p className="text-[13px] font-medium text-brand-ink/70">{payee.name} gets</p>
+          <p className="tabular mt-1 text-[32px] leading-tight font-semibold tracking-[-0.03em]">
+            {q ? displayAmount(q.amount) : loading ? "…" : "0"} <span className="text-lg">{c.symbol}</span>
+          </p>
+          <dl className="tabular mt-4 space-y-2 text-left text-[13px]">
+            <Row label="You pay">{q ? `${displayAmount(q.fundAmount)} ${coin(q.fundCoinKey).symbol}` : "—"}</Row>
+            <Row label="Value">{q ? fmt(q.usd, q.inr) : "—"}</Row>
+            <Row label="Fee (convert + network)">{q ? (q.feeUsd === null ? "Shown after" : `≈ ${fmt(q.feeUsd, inrPerUsd ? q.feeUsd * inrPerUsd : null)}`) : "—"}</Row>
+            <Row label="Rate">{q ? `1 ZEC = ${fmt(q.zecUsd, inrPerUsd ? q.zecUsd * inrPerUsd : null)}` : "—"}</Row>
+          </dl>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 px-1 text-[12px] font-medium text-brand-ink/75">
+          <span>Arrives as</span>
+          <span className="rounded-full bg-white/70 px-2.5 py-1 text-brand-ink">{coinName(c)}</span>
+          <span className="ml-1">in</span>
+          <span className="rounded-full bg-white/70 px-2.5 py-1 text-brand-ink">{payee.kind === "zorro" ? "seconds" : "~1–3 min"}</span>
         </div>
       </section>
+
+      {qError && <ErrorBox message={qError} />}
+      {q?.problems.map((p) => (
+        <ErrorBox key={p} message={p} />
+      ))}
+      {q?.notes.map((n) => (
+        <p key={n} className="text-xs text-gold">
+          {n}
+        </p>
+      ))}
 
       {c.key !== "zec" && (
         <div>
@@ -111,9 +148,15 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
             onChange={setFundWith}
             options={[
               { value: "zec", label: "ZEC (convert now)" },
-              { value: "coin", label: `My ${c.symbol} balance` },
+              { value: "coin", label: `My ${c.symbol}` },
             ]}
           />
+          {fundWith === "zec" && (
+            <p className="mt-2 flex gap-2 text-xs leading-relaxed text-muted">
+              <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+              Zorro converts slightly more ZEC than needed so {payee.name} gets the exact amount; any small extra stays in your wallet as {c.symbol}.
+            </p>
+          )}
         </div>
       )}
 
@@ -124,80 +167,23 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
         <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={120} placeholder="e.g. November rent" className="field text-sm" />
       </label>
 
-      {valid && (
-        <section className="panel p-5" aria-live="polite" aria-busy={loading}>
-          {loading ? (
-            <div className="flex flex-col gap-3">
-              <div className="h-5 w-40 animate-pulse rounded bg-white/8" />
-              <div className="h-5 w-56 animate-pulse rounded bg-white/8" />
-              <p className="text-xs text-muted">Getting a live quote from NEAR Intents…</p>
-            </div>
-          ) : qError ? (
-            <ErrorBox message={qError} />
-          ) : q ? (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted">You pay</span>
-                <strong className="tabular text-lg font-semibold">
-                  {displayAmount(q.fundAmount)} {coin(q.fundCoinKey).symbol}
-                </strong>
-              </div>
-              <div className="my-2 flex justify-center text-dim">
-                <ArrowDown size={16} aria-hidden="true" />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted">{payee.name} gets</span>
-                <strong className="tabular text-lg font-semibold text-zec">
-                  {displayAmount(q.amount)} {c.symbol}
-                </strong>
-              </div>
-              <dl className="tabular mt-4 space-y-2 border-t border-line pt-4 text-sm">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted">Value</dt>
-                  <dd>{fmt(q.usd, q.inr)}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted">Fees (conversion + network)</dt>
-                  <dd>{q.feeUsd === null ? "Shown after" : `≈ ${fmt(q.feeUsd, q.feeUsd * (q.inr / Math.max(q.usd, 1e-9)))}`}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted">Arrives as</dt>
-                  <dd>{coinName(c)}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted">Route</dt>
-                  <dd>{payee.kind === "zorro" ? "Zorro → Zorro, instant" : q.fundCoinKey === q.coinKey ? "Send" : "Convert, then send"}</dd>
-                </div>
-              </dl>
-              {q.fundCoinKey !== q.coinKey && (
-                <p className="mt-3 flex gap-2 text-xs leading-relaxed text-muted">
-                  <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-                  Zorro converts slightly more ZEC than needed so {payee.name} gets the exact amount. Any small extra stays in your wallet as {c.symbol}.
-                </p>
-              )}
-              {q.notes.map((n) => (
-                <p key={n} className="mt-2 text-xs text-gold">
-                  {n}
-                </p>
-              ))}
-              {q.problems.length > 0 && (
-                <div className="mt-3 flex flex-col gap-2">
-                  {q.problems.map((p) => (
-                    <ErrorBox key={p} message={p} />
-                  ))}
-                </div>
-              )}
-            </>
-          ) : null}
-        </section>
-      )}
-
       {error && <ErrorBox message={error} />}
-      <button type="button" onClick={pay} disabled={!q || q.problems.length > 0 || busy} className="btn-primary w-full">
-        <Send size={17} aria-hidden="true" />
-        {busy ? "Starting…" : q ? `Pay ${fmt(q.usd, q.inr)}` : "Pay"}
-      </button>
+      <SlideToConfirm
+        label={q ? `Slide to pay ${fmt(q.usd, q.inr)}` : "Slide to pay"}
+        busyLabel={busy ? "Starting…" : null}
+        disabled={!q || q.problems.length > 0}
+        onConfirm={pay}
+      />
       <p className="text-center text-xs text-dim">Payments can&apos;t be reversed. Within your daily limit, no extra Face ID is needed.</p>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="text-brand-ink/65">{label}</dt>
+      <dd className="text-right font-semibold">{children}</dd>
     </div>
   );
 }

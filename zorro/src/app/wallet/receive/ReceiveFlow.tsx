@@ -42,7 +42,7 @@ export function ReceiveFlow() {
     return (
       <div className="panel p-5 text-sm">
         Create your wallet first.{" "}
-        <Link href="/wallet/setup" className="text-zec">
+        <Link href="/wallet/setup" className="text-brand">
           Create wallet
         </Link>
       </div>
@@ -78,8 +78,8 @@ export function ReceiveFlow() {
           <section className="glass-card p-6 text-center" aria-live="polite">
             <CircleCheck size={40} className="mx-auto" aria-hidden="true" />
             <h2 className="mt-3 text-2xl font-semibold">Money added</h2>
-            <p className="mt-1 text-sm text-zec-ink/80">Your {c.symbol} is in your Zorro balance.</p>
-            <Link href="/" className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zec-ink text-sm font-semibold text-zec">
+            <p className="mt-1 text-sm text-brand-ink/80">Your {c.symbol} is in your Zorro balance.</p>
+            <Link href="/" className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-ink text-sm font-semibold text-brand">
               Go to Home
             </Link>
           </section>
@@ -98,7 +98,7 @@ export function ReceiveFlow() {
             <div className="flex gap-2">
               <CopyButton value={deposit.depositAddress} label="Copy address" />
               {uri && amount && (
-                <a href={uri} className="shrink-0 rounded-full bg-zec px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-zec-ink uppercase">
+                <a href={uri} className="shrink-0 rounded-full bg-brand px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-brand-ink uppercase">
                   Open wallet
                 </a>
               )}

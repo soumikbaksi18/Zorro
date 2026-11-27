@@ -26,7 +26,7 @@ export function PasskeyGate({ title = "Create your Zorro passkey" }: { title?: s
 
   return (
     <section className="panel-hero p-5" aria-labelledby="gate-heading">
-      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-zec/15 text-zec">
+      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand/15 text-brand">
         <Fingerprint size={20} strokeWidth={1.6} aria-hidden="true" />
       </span>
       <h2 id="gate-heading" className="mt-4 text-xl font-medium tracking-[-0.02em]">

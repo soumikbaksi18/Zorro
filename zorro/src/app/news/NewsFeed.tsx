@@ -212,7 +212,7 @@ export function NewsFeed() {
               onClick={() => setFilter(f.value)}
               aria-pressed={filter === f.value}
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                filter === f.value ? "border-zec bg-zec text-zec-ink" : "border-line bg-panel text-muted hover:text-snow"
+                filter === f.value ? "border-brand bg-brand text-brand-ink" : "border-line bg-panel text-muted hover:text-snow"
               }`}
             >
               {f.label}
@@ -346,9 +346,9 @@ function AiBrief({ disabled }: { disabled: boolean }) {
           type="button"
           onClick={load}
           disabled={disabled || busy}
-          className="panel-hero flex w-full items-center gap-3 p-4 text-left transition-colors hover:border-zec/60 disabled:opacity-60"
+          className="panel-hero flex w-full items-center gap-3 p-4 text-left transition-colors hover:border-brand/60 disabled:opacity-60"
         >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-zec/20 text-zec-light">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand/20 text-brand-light">
             <Sparkles size={18} className={busy ? "animate-pulse" : ""} aria-hidden="true" />
           </span>
           <span className="min-w-0">
@@ -366,7 +366,7 @@ function AiBrief({ disabled }: { disabled: boolean }) {
     <section className="panel-hero p-5" aria-labelledby="brief-heading" aria-live="polite">
       <div className="flex items-center justify-between gap-3">
         <h2 id="brief-heading" className="eyebrow flex items-center gap-2">
-          <Sparkles size={13} className="text-zec-light" aria-hidden="true" /> Zcash today
+          <Sparkles size={13} className="text-brand-light" aria-hidden="true" /> Zcash today
         </h2>
         <span className={`rounded-full border px-2.5 py-0.5 text-[11px] ${mood.cls}`}>{mood.label}</span>
       </div>
@@ -374,7 +374,7 @@ function AiBrief({ disabled }: { disabled: boolean }) {
       <ul className="mt-3 flex flex-col gap-1.5 text-xs leading-relaxed text-snow/85">
         {brief.points.map((p) => (
           <li key={p} className="flex gap-2">
-            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zec-light" aria-hidden="true" />
+            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-brand-light" aria-hidden="true" />
             {p}
           </li>
         ))}
@@ -425,7 +425,7 @@ function Actions({ article, saved }: { article: NewsArticle; saved: boolean }) {
         href={article.link}
         target="_blank"
         rel="noopener noreferrer"
-        className="mr-auto flex items-center gap-1.5 rounded-full bg-zec/15 px-3 py-1.5 text-xs font-medium text-zec-light hover:bg-zec/25"
+        className="mr-auto flex items-center gap-1.5 rounded-full bg-brand/15 px-3 py-1.5 text-xs font-medium text-brand-light hover:bg-brand/25"
       >
         Read story <ExternalLink size={12} aria-hidden="true" />
       </a>
@@ -475,11 +475,11 @@ function FeaturedCard({ article, now, saved }: { article: NewsArticle; now: numb
       )}
       <div className="flex flex-col gap-2.5 p-4">
         <div className="flex items-center justify-between gap-2">
-          <span className="eyebrow text-[9px] text-zec-light">Top story</span>
+          <span className="eyebrow text-[9px] text-brand-light">Top story</span>
           <TopicPill topic={article.topic} />
         </div>
         <h2 className="text-lg leading-snug font-medium tracking-[-0.01em]">
-          <a href={article.link} target="_blank" rel="noopener noreferrer" className="hover:text-zec-light">
+          <a href={article.link} target="_blank" rel="noopener noreferrer" className="hover:text-brand-light">
             {article.title}
           </a>
         </h2>

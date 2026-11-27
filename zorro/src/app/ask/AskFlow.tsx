@@ -26,7 +26,7 @@ export function AskFlow() {
     return (
       <div className="panel p-5 text-sm">
         Create your wallet first.{" "}
-        <Link href="/wallet/setup" className="text-zec">
+        <Link href="/wallet/setup" className="text-brand">
           Create wallet
         </Link>
       </div>
@@ -77,7 +77,7 @@ export function AskFlow() {
 
       {draft?.status === "clarify" && (
         <section className="panel flex gap-3 p-4" aria-live="polite">
-          <MessageCircleQuestion size={18} className="mt-0.5 shrink-0 text-zec" aria-hidden="true" />
+          <MessageCircleQuestion size={18} className="mt-0.5 shrink-0 text-brand" aria-hidden="true" />
           <p className="text-sm">{draft.question}</p>
         </section>
       )}
@@ -89,19 +89,19 @@ export function AskFlow() {
       )}
       {draft?.status === "ok" && reviewHref && (
         <section className="glass-card p-5" aria-live="polite">
-          <p className="text-sm font-medium text-zec-ink/70">{draft.action === "pay" ? "Payment draft" : "Autopay draft"}</p>
+          <p className="text-sm font-medium text-brand-ink/70">{draft.action === "pay" ? "Payment draft" : "Autopay draft"}</p>
           <div className="mt-3 flex items-center gap-3">
             <PayeeAvatar name={draft.payeeName} coinKey={draft.coinKey} size={46} />
             <div>
               <p className="text-xl font-semibold">{amountLabel(draft.amount, draft.currency, draft.coinKey)}</p>
-              <p className="text-sm text-zec-ink/75">
+              <p className="text-sm text-brand-ink/75">
                 to {draft.payeeName}
                 {draft.action === "autopay" && draft.frequency && draft.day !== null ? ` · ${describeSchedule({ frequency: draft.frequency, day: draft.day })}` : ""}
               </p>
             </div>
           </div>
-          <p className="mt-3 text-sm text-zec-ink/80">{draft.explanation}</p>
-          <Link href={reviewHref} className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zec-ink text-sm font-semibold text-zec">
+          <p className="mt-3 text-sm text-brand-ink/80">{draft.explanation}</p>
+          <Link href={reviewHref} className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-ink text-sm font-semibold text-brand">
             Review &amp; confirm
           </Link>
         </section>

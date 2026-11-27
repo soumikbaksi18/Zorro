@@ -59,7 +59,7 @@ export function useFiat(): { currency: Currency; fmt: (usd: number | null | unde
 }
 
 /** Big balance with the decimals dimmed, like a bank app. */
-export function BigFiat({ value, currency, hidden }: { value: number; currency: Currency; hidden?: boolean }) {
+export function BigFiat({ value, currency, hidden, dim = "text-snow/35" }: { value: number; currency: Currency; hidden?: boolean; dim?: string }) {
   if (hidden) return <span className="tabular tracking-[-0.04em]">••••••</span>;
   const text = formatFiat(value, currency);
   const dot = text.lastIndexOf(".");
@@ -67,20 +67,20 @@ export function BigFiat({ value, currency, hidden }: { value: number; currency: 
   return (
     <span className="tabular tracking-[-0.04em]">
       {head}
-      {tail && <span className="text-snow/35">{tail}</span>}
+      {tail && <span className={dim}>{tail}</span>}
     </span>
   );
 }
 
 const STATUS: Record<string, { label: string; cls: string; icon: typeof CircleCheck }> = {
   queued: { label: "Starting", cls: "text-muted", icon: Clock3 },
-  converting: { label: "Converting", cls: "text-zec", icon: LoaderCircle },
-  sending: { label: "Sending", cls: "text-zec", icon: LoaderCircle },
+  converting: { label: "Converting", cls: "text-brand", icon: LoaderCircle },
+  sending: { label: "Sending", cls: "text-brand", icon: LoaderCircle },
   done: { label: "Done", cls: "text-up", icon: CircleCheck },
   failed: { label: "Failed", cls: "text-down", icon: CircleX },
   review: { label: "Under review", cls: "text-gold", icon: TriangleAlert },
   open: { label: "Open", cls: "text-muted", icon: CircleDashed },
-  pending: { label: "Waiting for payment", cls: "text-zec", icon: LoaderCircle },
+  pending: { label: "Waiting for payment", cls: "text-brand", icon: LoaderCircle },
   paid: { label: "Paid", cls: "text-up", icon: CircleCheck },
   cancelled: { label: "Cancelled", cls: "text-dim", icon: CircleX },
   expired: { label: "Expired", cls: "text-dim", icon: CircleX },

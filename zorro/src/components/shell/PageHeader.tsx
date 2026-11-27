@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-/** Screen header: optional back link, big title, optional subtitle and a right-hand action. */
+/** Screen header: optional round back button, big title, optional subtitle and a right-hand action. */
 export function PageHeader({
   title,
   lead,
@@ -16,9 +16,8 @@ export function PageHeader({
   return (
     <header className="mb-6">
       {back && (
-        <Link href={back.href} className="-ml-1 mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-snow">
-          <ChevronLeft size={18} aria-hidden="true" />
-          {back.label}
+        <Link href={back.href} aria-label={`Back to ${back.label}`} title={back.label} className="icon-btn mb-4">
+          <ArrowLeft size={19} aria-hidden="true" />
         </Link>
       )}
       <div className="flex items-start justify-between gap-3">

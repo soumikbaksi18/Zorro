@@ -58,7 +58,7 @@ export function SystemStatus() {
           type="button"
           onClick={recheck}
           disabled={loading}
-          className="rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] uppercase hover:border-zec-light disabled:opacity-40"
+          className="rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] uppercase hover:border-brand-light disabled:opacity-40"
         >
           {loading ? "Checking…" : "Recheck"}
         </button>

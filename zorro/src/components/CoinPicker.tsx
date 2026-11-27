@@ -31,7 +31,7 @@ export function CoinPicker({
             aria-checked={selected}
             onClick={() => onChange(c.key)}
             className={`flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-3 text-center transition-colors ${
-              selected ? "border-zec bg-zec/10" : "border-line bg-panel hover:border-line-strong"
+              selected ? "border-brand bg-brand/10" : "border-line bg-panel hover:border-line-strong"
             }`}
           >
             <CoinBadge coinKey={c.key} size={30} />

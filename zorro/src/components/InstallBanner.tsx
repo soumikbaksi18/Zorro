@@ -44,8 +44,8 @@ export function InstallBanner() {
   };
 
   return (
-    <aside className="panel mb-6 flex items-start gap-3 border-zec/40 bg-zec/5 p-4 text-sm">
-      <Smartphone size={18} strokeWidth={1.7} className="mt-0.5 shrink-0 text-zec-light" aria-hidden="true" />
+    <aside className="panel mb-6 flex items-start gap-3 border-brand/40 bg-brand/5 p-4 text-sm">
+      <Smartphone size={18} strokeWidth={1.7} className="mt-0.5 shrink-0 text-brand-light" aria-hidden="true" />
       <div className="flex-1">
         <p className="font-medium">Install Zorro</p>
         {mode === "ios" ? (

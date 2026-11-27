@@ -77,7 +77,7 @@ export function AccountCard() {
               setHandle(user.handle ?? "");
               setEditing(true);
             }}
-            className="mt-4 text-sm text-zec hover:text-zec-light"
+            className="mt-4 text-sm text-brand hover:text-brand-light"
           >
             {user.handle ? "Change handle" : "Choose a handle so friends can pay you instantly"}
           </button>
@@ -88,7 +88,7 @@ export function AccountCard() {
         {agent ? (
           <>
             <div className="flex items-center gap-3 p-4">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-zec/12 text-zec">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand/12 text-brand">
                 <Wallet size={19} aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1">
@@ -110,7 +110,7 @@ export function AccountCard() {
               <button
                 type="button"
                 onClick={async () => setCheck((await checkPaymentPermission().catch(() => ({ ok: false, detail: "Check failed" }))).detail)}
-                className="flex items-center gap-2 text-zec hover:text-zec-light"
+                className="flex items-center gap-2 text-brand hover:text-brand-light"
               >
                 <ShieldCheck size={15} aria-hidden="true" /> Test permission
               </button>
@@ -124,7 +124,7 @@ export function AccountCard() {
           </>
         ) : (
           <Link href="/wallet/setup" className="flex items-center gap-3 p-4 text-sm hover:bg-white/3">
-            <Wallet size={16} className="text-zec" aria-hidden="true" />
+            <Wallet size={16} className="text-brand" aria-hidden="true" />
             <span className="flex-1">Create your Zorro wallet</span>
             <ChevronRight size={16} className="text-dim" aria-hidden="true" />
           </Link>

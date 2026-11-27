@@ -1,36 +1,36 @@
 @import "tailwindcss";
 
 /*
- * Zorro design system: private cash in Zcash yellow.
- * Warm near-black pages, soft yellow light at the top of each screen, rounded
- * dark panels, glassy yellow cards for money, and receipt cards in yellow shades.
- * Colour is functional: yellow = action / brand, green = money in or success,
- * red = error, amber = notices.
+ * Zorro design system: private cash in lime and deep green.
+ * Near-black green pages with soft lime light at the top, rounded dark-green panels,
+ * a gradient "main wallet" card, light lime sheets for sending money, and lime receipts.
+ * Colour is functional: lime = action / brand / money in, red = error, amber = notices.
  */
 @theme {
-  --color-ink: #0b0a07; /* page */
-  --color-panel: #16140e; /* rounded panels */
-  --color-surface: #1d1a12; /* raised cards, inputs */
-  --color-surface-2: #26221a; /* chips, pressed */
-  --color-line: #2c281d; /* hairlines */
-  --color-line-strong: #3d3727;
-  --color-zec: #f4b728; /* Zcash yellow: primary */
-  --color-zec-light: #ffd45e;
-  --color-zec-dark: #c88f0c;
-  --color-zec-ink: #1c1505; /* text on yellow */
-  --color-cream: #fff4cf; /* receipt shades, light to deep */
-  --color-butter: #ffe48c;
-  --color-honey: #f8cf45;
-  --color-snow: #f7f3e8;
-  --color-muted: #a8a294;
-  --color-dim: #716b5d;
-  --color-up: #5fcf7a;
-  --color-down: #f2636f;
-  --color-gold: #f59e2b; /* notices (amber, so it reads apart from the brand yellow) */
+  --color-ink: #070b08; /* page */
+  --color-panel: #121a14; /* rounded panels */
+  --color-surface: #18221a; /* raised cards, inputs */
+  --color-surface-2: #213024; /* chips, pressed */
+  --color-line: #223026; /* hairlines */
+  --color-line-strong: #314536;
+  --color-brand: #b8f36b; /* lime: primary */
+  --color-brand-light: #d4fa9a;
+  --color-brand-dark: #6fb83a;
+  --color-brand-ink: #0b1607; /* text on lime */
+  --color-tint-1: #eefcd6; /* receipt shades, light to deep */
+  --color-tint-2: #d9f7a8;
+  --color-tint-3: #bfee7c;
+  --color-forest: #1f4a2a; /* deep green for gradients */
+  --color-snow: #f2f7ef;
+  --color-muted: #9aa89c;
+  --color-dim: #6a786c;
+  --color-up: #b8f36b;
+  --color-down: #ff6b6b;
+  --color-gold: #f5b14a; /* notices (amber, so it reads apart from the brand lime) */
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sora);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -43,21 +43,23 @@ body {
   background: var(--color-ink);
   color: var(--color-snow);
   -webkit-tap-highlight-color: transparent;
-  font-feature-settings: "cv01", "ss01";
 }
 
 ::selection {
-  background: var(--color-zec);
-  color: var(--color-zec-ink);
+  background: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
-:where(a, button, input, select, textarea, summary):focus-visible {
-  outline: 2px solid var(--color-zec-light);
-  outline-offset: 3px;
-}
+/* In the base layer so a utility like focus-visible:outline-none can still override it. */
+@layer base {
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 3px;
+  }
 
-button:disabled {
-  cursor: not-allowed;
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Numbers that change should not jiggle */
@@ -84,16 +86,16 @@ button:disabled {
     color: var(--color-muted);
   }
 
-  /* Soft yellow light behind the top of a screen (full-bleed, sits behind content). */
+  /* Soft lime light behind the top of a screen (full-bleed, sits behind content). */
   .screen-glow {
     position: absolute;
     inset: 0 0 auto 0;
-    height: 340px;
+    height: 360px;
     pointer-events: none;
     background:
-      radial-gradient(90% 70% at 15% -10%, rgb(244 183 40 / 0.42), transparent 62%),
-      radial-gradient(70% 60% at 100% 0%, rgb(255 212 94 / 0.16), transparent 70%),
-      linear-gradient(to bottom, rgb(244 183 40 / 0.06), transparent);
+      radial-gradient(90% 70% at 10% -10%, rgb(111 184 58 / 0.42), transparent 62%),
+      radial-gradient(70% 60% at 100% 0%, rgb(184 243 107 / 0.14), transparent 70%),
+      linear-gradient(to bottom, rgb(31 74 42 / 0.55), transparent);
     z-index: 0;
   }
 
@@ -101,48 +103,59 @@ button:disabled {
   .panel {
     background: var(--color-panel);
     border: 1px solid var(--color-line);
-    border-radius: 22px;
+    border-radius: 24px;
   }
 
-  /* Highlighted panel with yellow light in the corner. */
+  /* Highlighted panel with lime light in the corner. */
   .panel-hero {
     border: 1px solid var(--color-line-strong);
-    border-radius: 22px;
+    border-radius: 24px;
     background:
-      radial-gradient(120% 80% at 100% 0%, rgb(244 183 40 / 0.18), transparent 60%),
+      radial-gradient(120% 80% at 100% 0%, rgb(184 243 107 / 0.14), transparent 60%),
       var(--color-panel);
   }
 
-  /* Glassy money card (balances). Add .glass-card-dark for the secondary style. */
+  /* The "main wallet" card: deep green flowing into lime, with soft light. Dark text sits on the lime end. */
   .glass-card {
     position: relative;
     overflow: hidden;
-    border-radius: 22px;
-    color: var(--color-zec-ink);
+    border-radius: 26px;
+    color: var(--color-brand-ink);
     background:
-      radial-gradient(120% 90% at 85% 10%, rgb(255 255 255 / 0.55), transparent 45%),
-      radial-gradient(90% 80% at 10% 100%, rgb(200 143 12 / 0.55), transparent 60%),
-      linear-gradient(135deg, #ffe48c 0%, #f4b728 55%, #e0a215 100%);
+      radial-gradient(60% 70% at 85% 20%, rgb(255 255 255 / 0.45), transparent 60%),
+      radial-gradient(80% 90% at 0% 100%, rgb(31 74 42 / 0.55), transparent 65%),
+      linear-gradient(135deg, #e6fcb8 0%, #b8f36b 45%, #7fcf4a 75%, #3f8f3a 100%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.5),
-      0 24px 50px -28px rgb(244 183 40 / 0.6);
+      0 26px 50px -30px rgb(111 184 58 / 0.7);
   }
+  /* Secondary cards (other coins): dark green glass. */
   .glass-card-dark {
     position: relative;
     overflow: hidden;
-    border-radius: 22px;
+    border-radius: 26px;
     color: var(--color-snow);
-    border: 1px solid rgb(255 255 255 / 0.08);
+    border: 1px solid rgb(255 255 255 / 0.07);
     background:
-      radial-gradient(120% 90% at 90% 0%, rgb(244 183 40 / 0.28), transparent 55%),
-      linear-gradient(160deg, #2a2516 0%, #17140d 100%);
+      radial-gradient(120% 90% at 90% 0%, rgb(184 243 107 / 0.22), transparent 55%),
+      linear-gradient(160deg, #1f3a24 0%, #101912 100%);
+  }
+  /* Light lime sheet (Sending money): dark text on a pale gradient. */
+  .sheet-light {
+    border-radius: 28px;
+    color: var(--color-brand-ink);
+    background: linear-gradient(170deg, #f2fde0 0%, #dcf8b0 55%, #b8f36b 100%);
+  }
+  .sheet-light .sheet-box {
+    border-radius: 18px;
+    background: rgb(255 255 255 / 0.55);
   }
 
   .page-title {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 500;
     letter-spacing: -0.03em;
-    line-height: 1.15;
+    line-height: 1.12;
   }
 
   .page-lead {
@@ -165,7 +178,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: 50px;
     padding: 0 22px;
     border-radius: 999px;
     font-size: 14px;
@@ -176,39 +189,39 @@ button:disabled {
       opacity 0.15s;
   }
   .btn-primary {
-    background: var(--color-zec);
-    color: var(--color-zec-ink);
+    background: var(--color-brand);
+    color: var(--color-brand-ink);
   }
   .btn-primary:hover {
-    background: var(--color-zec-light);
+    background: var(--color-brand-light);
   }
   .btn-secondary {
     border: 1px solid var(--color-line-strong);
     color: var(--color-snow);
-    background: rgb(255 255 255 / 0.03);
+    background: rgb(255 255 255 / 0.04);
   }
   .btn-secondary:hover {
-    border-color: var(--color-zec);
+    border-color: var(--color-brand);
   }
   .btn-primary:disabled,
   .btn-secondary:disabled {
     opacity: 0.4;
   }
 
-  /* Round icon action (Quick actions, Home buttons). */
-  .icon-action {
+  /* Round icon button (back, bell). */
+  .icon-btn {
     display: grid;
     place-items: center;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
-    background: var(--color-surface-2);
-    color: var(--color-zec-light);
+    background: rgb(255 255 255 / 0.1);
+    color: var(--color-snow);
+    backdrop-filter: blur(10px);
     transition: background 0.15s;
   }
-  .icon-action-solid {
-    background: var(--color-zec);
-    color: var(--color-zec-ink);
+  .icon-btn:hover {
+    background: rgb(255 255 255 / 0.16);
   }
 
   /* Underlined tabs. */
@@ -234,8 +247,8 @@ button:disabled {
   }
   .tab[aria-selected="true"],
   .tab[aria-pressed="true"] {
-    color: var(--color-zec);
-    border-bottom-color: var(--color-zec);
+    color: var(--color-brand);
+    border-bottom-color: var(--color-brand);
   }
 
   /* Filter chips. */
@@ -256,9 +269,9 @@ button:disabled {
     color: var(--color-snow);
   }
   .chip[aria-pressed="true"] {
-    border-color: var(--color-zec);
-    background: var(--color-zec);
-    color: var(--color-zec-ink);
+    border-color: var(--color-brand);
+    background: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 
   /* Small status chip. */
@@ -267,14 +280,14 @@ button:disabled {
     align-items: center;
     gap: 7px;
     padding: 5px 10px;
-    border: 1px solid #5a4a1c;
+    border: 1px solid #36522c;
     border-radius: 999px;
-    background: #1f1a0b;
+    background: #14200f;
     font-family: var(--font-mono);
     font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--color-zec);
+    color: var(--color-brand);
     white-space: nowrap;
   }
 
@@ -284,9 +297,9 @@ button:disabled {
     align-items: flex-start;
     gap: 12px;
     padding: 14px 16px;
-    border: 1px solid #5c3f14;
-    border-radius: 18px;
-    background: #1e160a;
+    border: 1px solid #5c4214;
+    border-radius: 20px;
+    background: #1e180a;
   }
   .notice strong {
     display: block;
@@ -298,7 +311,7 @@ button:disabled {
     margin-top: 3px;
     font-size: 12px;
     line-height: 1.5;
-    color: #d6b98c;
+    color: #d8bf8f;
   }
 
   /* "What others can see" rows. */
@@ -328,16 +341,16 @@ button:disabled {
   /* Text inputs. */
   .field {
     width: 100%;
-    min-height: 50px;
+    min-height: 52px;
     border: 1px solid var(--color-line-strong);
-    border-radius: 14px;
+    border-radius: 16px;
     background: var(--color-surface);
-    padding: 0 14px;
+    padding: 0 16px;
     outline: none;
     transition: border-color 0.15s;
   }
   .field:focus {
-    border-color: var(--color-zec);
+    border-color: var(--color-brand);
   }
   .field[aria-invalid="true"] {
     border-color: var(--color-down);
@@ -354,23 +367,23 @@ button:disabled {
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--color-zec-dark), var(--color-zec-light));
+    background: linear-gradient(90deg, var(--color-brand-dark), var(--color-brand-light));
   }
 
-  /* Receipt cards (Tracker): stacked, light to deep yellow, dark text. */
+  /* Receipt cards (Tracker): stacked, light to deep lime, dark text. */
   .receipt {
-    border-radius: 26px;
-    color: var(--color-zec-ink);
+    border-radius: 28px;
+    color: var(--color-brand-ink);
     padding: 22px 22px 40px;
   }
   .receipt-0 {
-    background: var(--color-cream);
+    background: var(--color-tint-1);
   }
   .receipt-1 {
-    background: var(--color-butter);
+    background: var(--color-tint-2);
   }
   .receipt-2 {
-    background: var(--color-honey);
+    background: var(--color-tint-3);
   }
 }
 

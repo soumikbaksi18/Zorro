@@ -42,7 +42,7 @@ export function PayeesManager() {
     return (
       <div className="panel p-5 text-sm">
         Create your wallet first.{" "}
-        <Link href="/wallet/setup" className="text-zec">
+        <Link href="/wallet/setup" className="text-brand">
           Create wallet
         </Link>
       </div>
@@ -141,7 +141,7 @@ function PayeeRow({ p, onRemove, payLink }: { p: PayeeView; onRemove: () => void
         </span>
       </span>
       {payLink && (
-        <Link href={`/pay?to=${p.id}`} className="rounded-full bg-zec px-3.5 py-1.5 text-xs font-semibold text-zec-ink">
+        <Link href={`/pay?to=${p.id}`} className="rounded-full bg-brand px-3.5 py-1.5 text-xs font-semibold text-brand-ink">
           Pay
         </Link>
       )}

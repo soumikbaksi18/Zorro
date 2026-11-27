@@ -26,7 +26,7 @@ export const STATUS_TONE: Record<Status, "wait" | "busy" | "good" | "bad"> = {
 
 export const TONE_CLASSES = {
   wait: "bg-gold/15 text-gold",
-  busy: "bg-zec/20 text-zec-light",
+  busy: "bg-brand/20 text-brand-light",
   good: "bg-up/15 text-up",
   bad: "bg-down/15 text-down",
 } as const;

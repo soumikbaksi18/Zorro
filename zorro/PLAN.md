@@ -162,7 +162,8 @@ Next.js 16 (App Router, Cache Components) + TypeScript + Tailwind, installable p
 ## 11. Brand
 
 - **Logo:** [`brand/zorro-logo.png`](brand/zorro-logo.png), a low-poly yellow fox with green hair (transparent PNG). App icons in `public/icons/`, `src/app/icon.png` and `src/app/apple-icon.png` are generated from it.
-- **Palette:** Zcash yellow `#F4B728` (light `#FFD45E`, dark `#C88F0C`, text on yellow `#1C1505`), receipt shades `#FFF4CF` / `#FFE48C` / `#F8CF45`, green `#5FCF7A` (money in / success), red `#F2636F`, amber `#F59E2B` (notices), off-white `#F7F3E8`, background `#0B0A07`.
+- **Palette (lime & deep green):** lime `#B8F36B` (light `#D4FA9A`, dark `#6FB83A`, text on lime `#0B1607`), deep green `#1F4A2A` for gradients, receipt tints `#EEFCD6` / `#D9F7A8` / `#BFEE7C`, red `#FF6B6B`, amber `#F5B14A` (notices), off-white `#F2F7EF`, background `#070B08`. Font: Sora.
+- **Layout:** gradient "Main wallet" card, floating bottom bar with a raised lime Pay button, light lime "Sending money" sheet with slide-to-pay, Statistic chart with Income/Spend toggle, stacked lime receipts.
 - Words: "pay", "send", "spend", "get paid". Never "trade", "bot", "profit".
 
 ---

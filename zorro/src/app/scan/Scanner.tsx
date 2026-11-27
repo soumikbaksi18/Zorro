@@ -85,7 +85,7 @@ export function Scanner() {
     return (
       <div className="panel p-5 text-sm">
         Create your wallet first.{" "}
-        <Link href="/wallet/setup" className="text-zec">
+        <Link href="/wallet/setup" className="text-brand">
           Create wallet
         </Link>
       </div>
@@ -99,11 +99,11 @@ export function Scanner() {
       <section className="relative overflow-hidden rounded-[26px] border border-line bg-black">
         <video ref={videoRef} playsInline muted className={`aspect-square w-full object-cover ${camera === "on" ? "" : "invisible"}`} />
         {camera === "on" && (
-          <div className="pointer-events-none absolute inset-10 rounded-3xl border-2 border-zec/80 shadow-[0_0_0_999px_rgba(0,0,0,0.35)]" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-10 rounded-3xl border-2 border-brand/80 shadow-[0_0_0_999px_rgba(0,0,0,0.35)]" aria-hidden="true" />
         )}
         {camera !== "on" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-full bg-zec/15 text-zec">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-brand/15 text-brand">
               <Camera size={26} aria-hidden="true" />
             </span>
             <p className="text-sm text-snow/80">{camera === "denied" ? "Camera unavailable. Allow camera access, or paste below." : "Scan a payment QR code"}</p>
@@ -166,14 +166,14 @@ function ScanOutcome({ result, onReset }: { result: ScanResult; onReset: () => v
   return (
     <div className="flex flex-col gap-5">
       <section className="glass-card p-5">
-        <p className="text-sm font-medium text-zec-ink/70">{result.label ?? "Pay to"}</p>
+        <p className="text-sm font-medium text-brand-ink/70">{result.label ?? "Pay to"}</p>
         <p className="mt-1 font-mono text-[15px] font-semibold break-all">{shortAddress(result.address, 10)}</p>
         {result.amount && c && (
           <p className="tabular mt-3 text-[34px] leading-none font-semibold tracking-[-0.03em]">
             {displayAmount(result.amount)} {c.symbol}
           </p>
         )}
-        {c && <p className="mt-2 text-sm text-zec-ink/75">in {coinName(c)}</p>}
+        {c && <p className="mt-2 text-sm text-brand-ink/75">in {coinName(c)}</p>}
       </section>
 
       {!result.coinKey && (

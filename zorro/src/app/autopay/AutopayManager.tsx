@@ -45,7 +45,7 @@ export function AutopayManager() {
     return (
       <div className="panel p-5 text-sm">
         Create your wallet first.{" "}
-        <Link href="/wallet/setup" className="text-zec">
+        <Link href="/wallet/setup" className="text-brand">
           Create wallet
         </Link>
       </div>
@@ -75,9 +75,9 @@ export function AutopayManager() {
 
       {schedules && schedules.length > 0 && (
         <section className="glass-card p-5">
-          <p className="text-sm font-medium text-zec-ink/70">Autopay each month</p>
+          <p className="text-sm font-medium text-brand-ink/70">Autopay each month</p>
           <p className="tabular mt-1 text-[32px] leading-tight font-semibold tracking-[-0.03em]">≈ {fmt(monthlyUsd, monthlyInr)}</p>
-          <p className="mt-1 text-xs text-zec-ink/70">
+          <p className="mt-1 text-xs text-brand-ink/70">
             {schedules.filter((s) => s.status === "active").length} active · runs at 9:00 AM IST · converted from ZEC on the day
           </p>
         </section>
@@ -156,7 +156,7 @@ function SmallButton({ onClick, icon, label, danger }: { onClick: () => void; ic
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${danger ? "border-down/30 text-down hover:bg-down/10" : "border-line-strong hover:border-zec"}`}
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${danger ? "border-down/30 text-down hover:bg-down/10" : "border-line-strong hover:border-brand"}`}
     >
       {icon}
       {label}
@@ -184,7 +184,7 @@ function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView
     return (
       <div className="panel p-5 text-sm">
         Approve a payee first, then set up Autopay for them.{" "}
-        <Link href="/payees" className="text-zec">
+        <Link href="/payees" className="text-brand">
           Add a payee
         </Link>
       </div>
@@ -207,7 +207,7 @@ function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView
   return (
     <section className="panel flex flex-col gap-5 p-5" aria-labelledby="new-sched-heading">
       <h2 id="new-sched-heading" className="section-title flex items-center gap-2">
-        <CalendarClock size={18} className="text-zec" aria-hidden="true" /> New Autopay
+        <CalendarClock size={18} className="text-brand" aria-hidden="true" /> New Autopay
       </h2>
       <div>
         <p className="mb-2 text-sm font-medium">Pay</p>
@@ -219,7 +219,7 @@ function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView
               role="radio"
               aria-checked={payeeId === p.id}
               onClick={() => setPayeeId(p.id)}
-              className={`flex w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-2 text-xs ${payeeId === p.id ? "border-zec bg-zec/10" : "border-transparent"}`}
+              className={`flex w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-2 text-xs ${payeeId === p.id ? "border-brand bg-brand/10" : "border-transparent"}`}
             >
               <PayeeAvatar name={p.name} coinKey={p.coinKey} size={44} />
               <span className="w-full truncate">{p.name}</span>
@@ -263,7 +263,7 @@ function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView
         {frequency === "weekly" ? (
           <div className="mt-3 grid grid-cols-7 gap-1.5" role="radiogroup" aria-label="Weekday">
             {WEEKDAYS.map((d, i) => (
-              <button key={d} type="button" role="radio" aria-checked={day === i} onClick={() => setDay(i)} className={`rounded-xl py-2 text-xs font-medium ${day === i ? "bg-zec text-zec-ink" : "bg-surface text-muted"}`}>
+              <button key={d} type="button" role="radio" aria-checked={day === i} onClick={() => setDay(i)} className={`rounded-xl py-2 text-xs font-medium ${day === i ? "bg-brand text-brand-ink" : "bg-surface text-muted"}`}>
                 {d}
               </button>
             ))}

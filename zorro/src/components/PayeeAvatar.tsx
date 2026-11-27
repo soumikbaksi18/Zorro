@@ -13,7 +13,7 @@ export function PayeeAvatar({ name, coinKey, size = 48 }: { name: string; coinKe
   return (
     <span className="relative inline-grid shrink-0" style={{ width: size, height: size }}>
       <span
-        className="grid place-items-center rounded-full bg-gradient-to-br from-[#3a3220] to-[#211d13] font-semibold text-zec-light"
+        className="grid place-items-center rounded-full bg-gradient-to-br from-[#2c4a30] to-[#152018] font-semibold text-brand-light"
         style={{ width: size, height: size, fontSize: size * 0.36 }}
         aria-hidden="true"
       >
