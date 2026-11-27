@@ -249,7 +249,7 @@ export function PaymentRow({ p, highlight = false }: { p: PaymentView; highlight
     <Link
       href={`/pay/${p.id}`}
       className={`flex items-center gap-3 rounded-[22px] border border-white/6 p-3.5 transition-colors ${
-        highlight ? "bg-gradient-to-r from-[#24402a] to-[#3f6b34]" : "bg-white/[0.05] hover:bg-white/[0.08]"
+        highlight ? "glass bg-gradient-to-r from-[#24402a]/90 to-[#3f6b34]/80" : "glass hover:bg-white/[0.08]"
       }`}
     >
       <span

@@ -8,33 +8,38 @@ import { findCoin, type Coin } from "@/lib/coins";
 import { useCurrency, type Currency } from "@/lib/client-prefs";
 import { formatFiat } from "@/lib/format";
 
-const COIN_STYLE: Record<string, { bg: string; fg: string; glyph: string }> = {
-  ZEC: { bg: "#f4b728", fg: "#1c1505", glyph: "ⓩ" },
-  USDC: { bg: "#2775ca", fg: "#ffffff", glyph: "$" },
-  USDT: { bg: "#26a17b", fg: "#ffffff", glyph: "₮" },
-  SOL: { bg: "linear-gradient(135deg,#9945ff,#14f195)", fg: "#ffffff", glyph: "S" },
-  ETH: { bg: "#627eea", fg: "#ffffff", glyph: "Ξ" },
-  BTC: { bg: "#f7931a", fg: "#ffffff", glyph: "₿" },
-  NEAR: { bg: "#f2f1e9", fg: "#111111", glyph: "N" },
-};
+// Official coin and network logos from @web3icons/core (MIT), extracted to /public/coins and /public/chains.
+const COIN_LOGO: Record<string, string> = { ZEC: "zec", USDC: "usdc", USDT: "usdt", SOL: "sol", ETH: "eth", BTC: "btc", NEAR: "near" };
+const CHAIN_LOGO: Record<string, string> = { base: "base", arb: "arb", tron: "tron", sol: "sol", eth: "eth" };
+/** The chain a coin natively lives on; a token elsewhere gets a small chain logo in the corner. */
+const NATIVE_CHAIN: Record<string, string> = { ZEC: "zec", SOL: "sol", ETH: "eth", BTC: "btc", NEAR: "near" };
 
-/** Round coin mark with a small chain label underneath when the symbol lives on several chains. */
-export function CoinBadge({ coinKey, size = 36, showChain = false }: { coinKey: string; size?: number; showChain?: boolean }) {
+/** Round coin logo, with the chain's logo in the corner for tokens on several chains (USDC on Base…). */
+export function CoinBadge({ coinKey, size = 36, showChain = true }: { coinKey: string; size?: number; showChain?: boolean }) {
   const c = findCoin(coinKey);
-  const s = COIN_STYLE[c?.symbol ?? ""] ?? { bg: "#3d3727", fg: "#f7f3e8", glyph: (c?.symbol ?? "?").slice(0, 1) };
+  const logo = c ? COIN_LOGO[c.symbol] : undefined;
+  const chainLogo = c && NATIVE_CHAIN[c.symbol] !== c.chain ? CHAIN_LOGO[c.chain] : undefined;
+  const mini = Math.max(12, Math.round(size * 0.44));
   return (
-    <span className="relative inline-grid shrink-0" style={{ width: size, height: size }}>
-      <span
-        className="grid place-items-center rounded-full font-semibold"
-        style={{ width: size, height: size, background: s.bg, color: s.fg, fontSize: size * 0.46 }}
-        aria-hidden="true"
-      >
-        {s.glyph}
-      </span>
-      {showChain && c && c.kind !== "zec" && c.symbol.toUpperCase() !== c.chainName.toUpperCase() && (
-        <span className="absolute -right-1 -bottom-1 rounded-full border border-ink bg-surface-2 px-1 text-[8px] leading-[14px] font-medium text-snow">
-          {c.chainName.slice(0, 4)}
+    <span className="relative inline-grid shrink-0" style={{ width: size, height: size }} aria-hidden="true">
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element -- tiny static SVGs; next/image adds nothing here
+        <img src={`/coins/${logo}.svg`} alt="" width={size} height={size} className="rounded-full shadow-[0_2px_8px_-2px_rgba(0,0,0,0.6)]" />
+      ) : (
+        <span className="grid place-items-center rounded-full bg-surface-2 font-semibold" style={{ width: size, height: size, fontSize: size * 0.42 }}>
+          {(c?.symbol ?? "?").slice(0, 1)}
         </span>
+      )}
+      {showChain && chainLogo && (
+        // eslint-disable-next-line @next/next/no-img-element -- tiny static SVGs
+        <img
+          src={`/chains/${chainLogo}.svg`}
+          alt=""
+          width={mini}
+          height={mini}
+          className="absolute rounded-full ring-2 ring-ink"
+          style={{ right: -mini * 0.22, bottom: -mini * 0.22, width: mini, height: mini }}
+        />
       )}
     </span>
   );

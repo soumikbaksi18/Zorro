@@ -14,6 +14,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
+      <div className="ambient" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="screen-glow" aria-hidden="true" />
 
       <main

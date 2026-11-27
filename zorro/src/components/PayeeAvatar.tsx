@@ -20,7 +20,7 @@ export function PayeeAvatar({ name, coinKey, size = 48 }: { name: string; coinKe
         {initials}
       </span>
       <span className="absolute -right-0.5 -bottom-0.5 rounded-full ring-2 ring-ink">
-        <CoinBadge coinKey={coinKey} size={Math.round(size * 0.4)} />
+        <CoinBadge coinKey={coinKey} size={Math.round(size * 0.4)} showChain={false} />
       </span>
     </span>
   );
