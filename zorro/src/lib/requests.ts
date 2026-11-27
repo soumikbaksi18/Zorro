@@ -226,9 +226,12 @@ export async function refreshRequest(row: typeof schema.paymentRequests.$inferSe
   return null;
 }
 
-/** Worker: follow every pending link. */
-export async function refreshPendingRequests(): Promise<number> {
-  const rows = await db.select().from(schema.paymentRequests).where(eq(schema.paymentRequests.status, "pending"));
+/** Follow every pending link (or just one user's). */
+export async function refreshPendingRequests(userId?: string): Promise<number> {
+  const rows = await db
+    .select()
+    .from(schema.paymentRequests)
+    .where(and(eq(schema.paymentRequests.status, "pending"), userId ? eq(schema.paymentRequests.userId, userId) : undefined));
   let paid = 0;
   for (const r of rows) {
     const updated = await refreshRequest(r).catch(() => null);

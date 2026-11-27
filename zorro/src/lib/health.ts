@@ -73,10 +73,14 @@ export async function runHealthChecks(): Promise<HealthReport> {
 
   const beat = await workerHeartbeat().catch(() => null);
   const ageSec = beat ? Math.round((Date.now() - new Date(beat).getTime()) / 1000) : null;
+  const ago = (s: number) => (s < 120 ? `${s}s` : s < 7200 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`);
   const worker: Check =
     ageSec !== null && ageSec < 90
       ? { ok: true, detail: `Running (last tick ${ageSec}s ago)` }
-      : { ok: false, detail: ageSec === null ? "Not running. Start it with npm run worker" : `Stopped ${ageSec}s ago. Start it with npm run worker` };
+      : process.env.VERCEL
+        ? // Serverless: no always-on worker. Requests move payments; the daily cron runs Autopay.
+          { ok: true, detail: `Serverless mode: payments move on demand; daily cron ${ageSec === null ? "hasn't run yet" : `last ran ${ago(ageSec)} ago`}` }
+        : { ok: false, detail: ageSec === null ? "Not running. Start it with npm run worker" : `Stopped ${ago(ageSec)} ago. Start it with npm run worker` };
 
   const encryption: Check = encryptionConfigured()
     ? { ok: true, detail: "Key loaded" }

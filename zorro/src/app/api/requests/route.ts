@@ -1,12 +1,17 @@
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { AgentError } from "@/lib/agent-service";
 import { RequestInputSchema, createRequest, listRequests } from "@/lib/requests";
 import { jsonRoute, readJson } from "@/lib/route";
 import { requestOrigin, requireUser } from "@/lib/session";
+import { nudgeUser } from "@/lib/worker";
 
 export async function GET() {
   await connection();
-  return jsonRoute(async () => listRequests(await requireUser()));
+  return jsonRoute(async () => {
+    const user = await requireUser();
+    after(() => nudgeUser(user.id).catch(() => {}));
+    return listRequests(user);
+  });
 }
 
 /** Create a payment link (get paid in any coin, arrives as ZEC). */

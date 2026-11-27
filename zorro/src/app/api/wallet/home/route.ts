@@ -1,16 +1,18 @@
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { listPayments } from "@/lib/payments";
 import { jsonRoute } from "@/lib/route";
 import { requireUser } from "@/lib/session";
 import { balancesFor } from "@/lib/wallet-service";
+import { nudgeUser } from "@/lib/worker";
 
 /** Everything the Home screen needs in one call. */
 export async function GET() {
   await connection();
   return jsonRoute(async () => {
     const user = await requireUser();
+    after(() => nudgeUser(user.id).catch(() => {})); // keep payments, links and deposits moving
     const [balances, recent, pending] = await Promise.all([
       balancesFor(user),
       listPayments(user, { limit: 6 }),

@@ -181,6 +181,8 @@ export const payments = sqliteTable(
     status: text("status", { enum: PAYMENT_STATUSES }).notNull().default("queued"),
     state: text("state", { mode: "json" }).$type<Record<string, unknown>>().notNull().default(sql`'{}'`),
     error: text("error"),
+    /** Claimed by whoever is advancing this payment (worker, cron or a request), so no step ever runs twice at once. */
+    lockUntil: integer("lock_until", { mode: "timestamp_ms" }),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

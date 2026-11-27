@@ -1,5 +1,6 @@
+import { after } from "next/server";
 import { AgentError } from "@/lib/agent-service";
-import { ConvertInputSchema, createConvert } from "@/lib/payments";
+import { ConvertInputSchema, advanceWallet, createConvert } from "@/lib/payments";
 import { jsonRoute, readJson } from "@/lib/route";
 import { requestOrigin, requireUser } from "@/lib/session";
 
@@ -10,6 +11,8 @@ export async function POST(request: Request) {
     await requestOrigin();
     const parsed = ConvertInputSchema.safeParse(await readJson(request));
     if (!parsed.success) throw new AgentError(parsed.error.issues[0]?.message ?? "Check the swap");
-    return createConvert(user, parsed.data);
+    const { id, agentId } = await createConvert(user, parsed.data);
+    after(() => advanceWallet(agentId).catch(() => false));
+    return { id };
   });
 }

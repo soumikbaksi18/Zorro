@@ -86,7 +86,7 @@ Verified end to end on **NEAR Intents mainnet** with a virtual passkey (no money
 | Ask Zorro: "Pay Riya 500 rupees every Friday" | Correct weekly Autopay draft |
 | Typecheck, lint, 47 unit tests, production build | Passing |
 
-**Not yet done:** one small real-money payment (and a shielded `u1` delivery test), deployment with HTTPS and an always-on worker, demo video and the public X post.
+**Not yet done:** one small real-money payment (and a shielded `u1` delivery test), the live deployment (ready: see Deploy), demo video and the public launch post.
 
 > NEAR Intents' Agent API is an experimental mainnet beta. Use small amounts only.
 
@@ -119,6 +119,68 @@ Optional: `DATABASE_URL`, `WORKER_TICK_MS` (default 5000), base-URL overrides (s
 
 > Stop the dev server before `npm run build`: building while it runs can corrupt `.next`. If styles look stale after big changes, stop the server and move `.next/dev` aside.
 
+## Deploy (Vercel + Turso, free tiers)
+
+Vercel runs the app and its API; **Turso** hosts the database (SQLite in the cloud). There's no always-on worker on Vercel, so Zorro moves payments **on demand** (right after you confirm, while a receipt is open, and whenever you open Home, Tracker or your payment links), and a **Vercel Cron job** runs Autopay once a day after 9:00 AM IST and keeps finishing payments for up to 5 minutes. A database lease on each payment means two triggers can never run the same step twice.
+
+### 1. Create the Turso database
+
+With the CLI (macOS):
+
+```bash
+brew install tursodatabase/tap/turso
+turso auth signup            # or: turso auth login
+turso db create zorro        # pick a location near your users (e.g. Mumbai) if asked
+turso db show zorro --url    # → libsql://zorro-<you>.turso.io   (DATABASE_URL)
+turso db tokens create zorro # → a long token                    (DATABASE_AUTH_TOKEN)
+```
+
+Or in the dashboard at https://app.turso.tech: **Create database**, then **Connect** shows the URL and lets you create a token.
+
+Create the tables once, from your computer:
+
+```bash
+cd zorro
+DATABASE_URL="libsql://zorro-<you>.turso.io" DATABASE_AUTH_TOKEN="<token>" npm run db:migrate
+# → "Database is up to date."
+```
+
+Run the same command again after any future schema change (new files in `drizzle/`).
+
+### 2. Deploy on Vercel
+
+1. Push the repo to GitHub (`.env.local` is git-ignored, so keys stay on your machine).
+2. On https://vercel.com: **Add New → Project → import the repo**.
+3. **Root Directory: `zorro`** (the app lives in that folder). Framework: Next.js (auto). Node 22 is picked from `package.json`.
+4. **Environment Variables** (Production):
+
+   | Name | Value |
+   |---|---|
+   | `DATABASE_URL` | `libsql://zorro-<you>.turso.io` |
+   | `DATABASE_AUTH_TOKEN` | the Turso token |
+   | `AGENT_API_KEY` | NEAR Intents Agent API key |
+   | `ONECLICK_API_KEY` | NEAR Intents 1Click key |
+   | `ZORRO_ENCRYPTION_KEY` | a new `openssl rand -base64 32`. Keep it forever: changing it means every wallet re-authorises Zorro |
+   | `CRON_SECRET` | `openssl rand -hex 32` (Vercel sends it to its own cron job) |
+   | `SARVAM_API_KEY` | Sarvam AI key (voice + chat) |
+   | `DEEPSEEK_API_KEY` | backup AI key |
+   | `NEWS_API_KEY` | NewsAPI.org (or NewsData.io) key |
+
+   Don't set `ZORRO_DEMO_MODE`.
+5. **Deploy.** Then open `https://<project>.vercel.app/api/health`: every check should be green, and the worker line reads "Serverless mode".
+6. **Settings → Cron Jobs** lists `/api/cron/tick` (daily, `0 4 * * *` UTC, about 9:30 AM IST; the free plan runs it within that hour). You can trigger it there with **Run** to test.
+
+### 3. After deploying
+
+- **Sign up again on the live site.** Passkeys belong to the domain they were created on, so local accounts don't carry over (your local database stays on your Mac).
+- Optional: a **custom domain** in Vercel → Domains. Create accounts after switching domains, for the same passkey reason.
+- Optional, faster Autopay and payment links: a free scheduler such as cron-job.org calling `https://<your-domain>/api/cron/tick` every 5 minutes with the header `Authorization: Bearer <CRON_SECRET>`. (On Vercel Pro you can instead set the schedule in `vercel.json` to `*/5 * * * *`.)
+- If Vercel rejects the 5-minute cron time budget on your plan, lower `maxDuration` in `src/app/api/cron/tick/route.ts` (e.g. to 60).
+
+### Other hosts
+
+With an always-on host (Railway, Render, Fly.io, a VPS) run `npm run build && npm start` plus `npm run worker` as a second process; use Turso, or a persistent disk with `DATABASE_URL=file:/data/zorro.db`.
+
 ## Project layout
 
 ```
@@ -147,7 +209,9 @@ src/lib/assistant.ts       Ask Zorro: context, actions (charts, drafts, screens)
 src/lib/sarvam.ts          Sarvam AI: speech-to-text, text-to-speech, chat
 src/lib/history.ts         price history for charts (Kraken)
 src/lib/ai.ts              AI client with output validation and data guard
-src/lib/worker.ts           worker tick (scripts/worker.ts runs it every 5 s)
+src/lib/worker.ts           worker tick (scripts/worker.ts runs it every 5 s), nudges and the Vercel cron run
+src/app/api/cron/tick/      Vercel Cron endpoint (Autopay + payment processing), secured by CRON_SECRET
+vercel.json                 cron schedule
 src/components/             UI: money, SlideToConfirm, SpendChart, landing/, shell/ (tab bar)
 drizzle/                    database migrations
 docs/screenshots/           README images

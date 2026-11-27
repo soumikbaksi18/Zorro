@@ -8,7 +8,7 @@
 // retried with the SAME key and can never pay twice. UNCERTAIN results are polled, never resent.
 
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import {
@@ -181,7 +181,7 @@ export async function quotePayment(user: CurrentUser, input: PayInput): Promise<
 
 const newReference = () => `ZR${randomBytes(5).toString("hex").toUpperCase()}`;
 
-export async function createPayment(user: CurrentUser, input: PayInput, opts: { scheduleId?: string } = {}): Promise<{ id: string; quote: PaymentQuote }> {
+export async function createPayment(user: CurrentUser, input: PayInput, opts: { scheduleId?: string } = {}): Promise<{ id: string; agentId: string; quote: PaymentQuote }> {
   const quote = await quotePayment(user, input);
   if (quote.problems.length) throw new AgentError(quote.problems[0], 409);
   const { agent } = await agentWithGrant(user);
@@ -208,7 +208,7 @@ export async function createPayment(user: CurrentUser, input: PayInput, opts: { 
     status: "queued",
     state: { plan: quote.plan },
   });
-  return { id, quote };
+  return { id, agentId: agent.id, quote };
 }
 
 /** Record a payment that failed before it started (e.g. an Autopay run without enough balance). */
@@ -342,7 +342,7 @@ export async function quoteConvert(user: CurrentUser, input: ConvertInput): Prom
   };
 }
 
-export async function createConvert(user: CurrentUser, input: ConvertInput): Promise<{ id: string }> {
+export async function createConvert(user: CurrentUser, input: ConvertInput): Promise<{ id: string; agentId: string }> {
   const quote = await quoteConvert(user, input);
   if (quote.problems.length) throw new AgentError(quote.problems[0], 409);
   if (BigInt(quote.plan.targetUnits) <= BigInt(0)) throw new AgentError("NEAR Intents couldn't quote this swap. Try another amount.", 409);
@@ -369,7 +369,7 @@ export async function createConvert(user: CurrentUser, input: ConvertInput): Pro
     status: "queued",
     state: { plan: quote.plan },
   });
-  return { id };
+  return { id, agentId: agent.id };
 }
 
 // ---------- Run (worker) ----------
@@ -388,6 +388,38 @@ async function grantTokenFor(agentId: string): Promise<string | null> {
   return decryptSecret(grant.tokenCiphertext, agentId);
 }
 
+// Payments are advanced by whoever gets there first: the local worker, the Vercel cron job,
+// or a request (after confirming, or while a receipt is open). A short lease in the database
+// makes sure only one of them runs a step at a time, so nothing is ever sent twice.
+const LEASE_MS = 90_000; // longer than the slowest Agent API call (45 s timeout)
+
+/** Take the lease on a payment. Returns false if someone else holds it. */
+export async function claimPayment(id: string, now = new Date()): Promise<boolean> {
+  const won = await db
+    .update(schema.payments)
+    .set({ lockUntil: new Date(now.getTime() + LEASE_MS) })
+    .where(and(eq(schema.payments.id, id), or(isNull(schema.payments.lockUntil), lt(schema.payments.lockUntil, now))))
+    .returning({ id: schema.payments.id });
+  return won.length === 1;
+}
+
+export async function releasePayment(id: string): Promise<void> {
+  await db.update(schema.payments).set({ lockUntil: null }).where(eq(schema.payments.id, id));
+}
+
+/** Advance one payment by one step, under its lease. */
+async function stepLocked(row: PaymentRow, log: (msg: string) => void): Promise<boolean> {
+  if (!(await claimPayment(row.id))) return false;
+  try {
+    await step(row, log);
+  } catch (e) {
+    log(`payment ${row.reference}: ${e instanceof Error ? e.message : e}`);
+  } finally {
+    await releasePayment(row.id).catch(() => {});
+  }
+  return true;
+}
+
 /** Advance every wallet's oldest unfinished payment by one step. */
 export async function processPayments(log: (msg: string) => void = () => {}): Promise<number> {
   const rows = await db.select().from(schema.payments).where(inArray(schema.payments.status, [...ACTIVE])).orderBy(schema.payments.createdAt);
@@ -396,14 +428,26 @@ export async function processPayments(log: (msg: string) => void = () => {}): Pr
   for (const row of rows) {
     if (seen.has(row.agentId)) continue; // one money action per wallet at a time
     seen.add(row.agentId);
-    try {
-      await step(row, log);
-      n++;
-    } catch (e) {
-      log(`payment ${row.reference}: ${e instanceof Error ? e.message : e}`);
-    }
+    if (await stepLocked(row, log)) n++;
   }
   return n;
+}
+
+/** Advance one wallet's oldest unfinished payment by one step (keeps the queue order). */
+export async function advanceWallet(agentId: string, log: (msg: string) => void = () => {}): Promise<boolean> {
+  const [row] = await db
+    .select()
+    .from(schema.payments)
+    .where(and(eq(schema.payments.agentId, agentId), inArray(schema.payments.status, [...ACTIVE])))
+    .orderBy(schema.payments.createdAt)
+    .limit(1);
+  return row ? stepLocked(row, log) : false;
+}
+
+/** Are any payments still in progress (anywhere)? */
+export async function hasActivePayments(): Promise<boolean> {
+  const [row] = await db.select({ id: schema.payments.id }).from(schema.payments).where(inArray(schema.payments.status, [...ACTIVE])).limit(1);
+  return Boolean(row);
 }
 
 type PaymentRow = typeof schema.payments.$inferSelect;
@@ -636,9 +680,18 @@ export async function listPayments(user: CurrentUser, opts: { limit?: number; si
   return rows.map(paymentView);
 }
 
-export async function getPayment(user: CurrentUser, id: string): Promise<PaymentView> {
-  const [row] = await db.select().from(schema.payments).where(and(eq(schema.payments.id, id), eq(schema.payments.userId, user.id))).limit(1);
-  if (!row) throw new AgentError("Payment not found.", 404);
+export async function getPayment(user: CurrentUser, id: string, opts: { advance?: boolean } = {}): Promise<PaymentView> {
+  const read = async () => {
+    const [row] = await db.select().from(schema.payments).where(and(eq(schema.payments.id, id), eq(schema.payments.userId, user.id))).limit(1);
+    if (!row) throw new AgentError("Payment not found.", 404);
+    return row;
+  };
+  let row = await read();
+  // An open receipt keeps its payment moving (on Vercel there's no always-on worker).
+  if (opts.advance && (ACTIVE as readonly string[]).includes(row.status)) {
+    await advanceWallet(row.agentId).catch(() => false);
+    row = await read();
+  }
   return paymentView(row);
 }
 

@@ -36,6 +36,13 @@
       "when": 1795786618903,
       "tag": "0004_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795795565706,
+      "tag": "0005_payment_lock",
+      "breakpoints": true
     }
   ]
 }

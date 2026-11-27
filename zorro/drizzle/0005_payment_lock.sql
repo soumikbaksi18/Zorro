@@ -1,0 +1,1 @@
+ALTER TABLE `payments` ADD `lock_until` integer;

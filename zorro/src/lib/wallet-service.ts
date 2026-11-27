@@ -129,13 +129,20 @@ export async function depositStatus(user: CurrentUser, correlationId: string) {
   return { status: op?.status ?? row.status, failureCode: op?.failure_code ?? null };
 }
 
-/** Worker: follow open deposit addresses (up to 4 days old) and add arrivals to the ledger. */
-export async function followDeposits(): Promise<number> {
+/** Follow open deposit addresses (up to 4 days old, optionally one wallet's) and add arrivals to the ledger. */
+export async function followDeposits(agentId?: string): Promise<number> {
   const since = new Date(Date.now() - 4 * 86_400_000);
   const rows = await db
     .select()
     .from(schema.operations)
-    .where(and(eq(schema.operations.kind, "deposit"), inArray(schema.operations.status, ["PENDING_DEPOSIT", "PROCESSING"]), gte(schema.operations.createdAt, since)));
+    .where(
+      and(
+        eq(schema.operations.kind, "deposit"),
+        inArray(schema.operations.status, ["PENDING_DEPOSIT", "PROCESSING"]),
+        gte(schema.operations.createdAt, since),
+        agentId ? eq(schema.operations.agentId, agentId) : undefined,
+      ),
+    );
   let n = 0;
   for (const row of rows) {
     if (!row.correlationId) continue;
