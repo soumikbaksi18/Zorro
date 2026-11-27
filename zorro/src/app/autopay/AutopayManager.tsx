@@ -11,6 +11,7 @@ import { coin, displayAmount } from "@/lib/coins";
 import { WEEKDAYS, amountLabel, describeSchedule, ordinal } from "@/lib/schedule-format";
 import type { PayeeView } from "@/lib/payees";
 import type { ScheduleView } from "@/lib/schedules";
+import { Dropdown } from "@/components/Dropdown";
 import { PayeeAvatar } from "@/components/PayeeAvatar";
 import { useFiat } from "@/components/money";
 import { ErrorBox, Segmented } from "@/components/ui";
@@ -269,17 +270,18 @@ function NewSchedule({ payees, preselect, initial, onDone }: { payees: PayeeView
             ))}
           </div>
         ) : (
-          <label className="mt-3 flex items-center gap-3 text-sm">
+          <div className="mt-3 flex items-center gap-3 text-sm">
             On the
-            <select value={day} onChange={(e) => setDay(Number(e.target.value))} className="field w-24 text-sm">
-              {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  {ordinal(d)}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              label="Day of the month"
+              value={day}
+              onChange={setDay}
+              className="w-[92px]"
+              maxHeight={200}
+              options={Array.from({ length: 28 }, (_, i) => ({ value: i + 1, label: ordinal(i + 1) }))}
+            />
             of every month
-          </label>
+          </div>
         )}
       </div>
       <label className="block">

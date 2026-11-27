@@ -2,7 +2,7 @@
 
 **Zorro is private cash on your phone.** You hold ZEC and pay anyone, or spend at any app, in whatever coin they want: Zorro converts it at the moment you pay, through NEAR Intents. Regular payments (rent, family, freelancers) run on their own, and every conversion is tracked, so you always know what each payment cost you in ZEC.
 
-Built for the Zcash India "Build on Zcash" bounty (Nov 2026). Version 1 of Zorro was a ZEC trading-bot app; after feedback from the Zcash India team ("the ecosystem sees Zcash as private cash, not a tradable asset"), all trading is removed. That plan is in git history.
+Version 1 of Zorro was a ZEC trading-bot app; after feedback from the Zcash community ("the ecosystem sees Zcash as private cash, not a tradable asset"), all trading is removed. That plan is in git history.
 
 ---
 
@@ -148,7 +148,7 @@ Shown in plain words before signing: "Zorro can pay up to $100 a day, only to pe
 | 5 | Autopay when the user isn't around: price moves, balance too low | Fix amounts in the payee's currency; check the quote's warnings before sending; warn a day early; never send a doomed payment |
 | 6 | Zorro's server holds grant tokens | Encrypted at rest; payees and daily limit cap the damage; user can revoke anytime |
 | 7 | Policy changes limited to 1 per 10 minutes | Batch several new payees into one Face ID; explain the wait if needed |
-| 8 | No fiat (UPI/card) | Out of scope for the bounty; mention as future work |
+| 8 | No fiat (UPI/card) | Out of scope for now; future work |
 | 9 | Passkeys need HTTPS on phones | Deploy with HTTPS for the demo |
 
 ---
@@ -168,10 +168,9 @@ Next.js 16 (App Router, Cache Components) + TypeScript + Tailwind, installable p
 
 ---
 
-## 12. Bounty submission checklist
+## 12. Launch checklist
 
 - [ ] Public GitHub repo with a clear README
 - [ ] Deployed app URL that installs on a phone
 - [ ] 2–3 minute demo: create wallet with Face ID → add ZEC → approve a payee → pay them in USDC (shows the ZEC cost) → set up a monthly Autopay → send @friend ZEC instantly → show the tracker
-- [ ] **An original public X post tagging @ZcashIND**
-- [ ] Confirm deadline and terms on the @ZcashIND bounty post
+- [ ] Public launch post on X

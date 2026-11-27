@@ -2,7 +2,7 @@
 
 **Private cash for Zcash.** Hold ZEC and pay anyone, or spend at any app, in the coin they want: USDC, USDT, SOL, ETH, BTC, NEAR and more. Zorro converts your ZEC at the moment you pay through [NEAR Intents](https://near-intents.org), runs your regular payments with Autopay, and tracks every conversion. Every payee is approved once with your Face ID, and Zorro can't pay anyone else.
 
-Built for the Zcash India **"Build on Zcash"** bounty (Nov 2026). Phone-first web app (installable PWA).
+Phone-first web app (installable PWA).
 
 <p align="center">
   <img src="docs/screenshots/landing.png" alt="Landing page: Private cash. Pay in any coin." width="200" />
@@ -29,7 +29,8 @@ Zorro keeps everything in ZEC and converts only at the edge, when you pay.
 | **Autopay** | Rent on the 1st, family every Friday: weekly or monthly at 9:00 AM IST, converted from ZEC on the day. Pause, resume, pay now. |
 | **Get paid in anything** | Share a link. The payer picks any of 13 coins and gets a one-time address; NEAR Intents converts it to ZEC on arrival. |
 | **Track everything** | Monthly spend, today's limit, a 7-day Income/Spend chart, "where your ZEC went", stacked receipts and CSV export, in INR or USD. |
-| **Ask Zorro (AI)** | "Pay Riya ₹500 every Friday" becomes a drafted Autopay that you review and confirm. The AI never moves money. |
+| **Swap inside the wallet** | ZEC → USDC, SOL, ETH and more (or back), with a live quote, 1% max slippage and slide to swap. |
+| **Ask Zorro (voice + chat)** | Talk or type in English or Indian languages (Sarvam AI speech-to-text, Bulbul voice replies, Sarvam-105B). It answers about ZEC, Zorro and your wallet, shows price charts (ZEC, BTC, ETH, SOL, NEAR), and drafts payments, swaps and Autopays for you to review. It never moves money. |
 | **Zcash news** | Zcash-only headlines with an AI "today in 30 seconds" brief. |
 | **Pay from another wallet** | Pay straight from Zashi/Vizor (or MetaMask/Phantom) via the 1Click API, without holding funds in Zorro. |
 
@@ -64,7 +65,7 @@ Zorro keeps everything in ZEC and converts only at the edge, when you pay.
 - Zorro's payment permission (grant token) is encrypted at rest (AES-256-GCM, bound to the wallet ID). Only its SHA-256 hash is registered with NEAR Intents.
 - Sessions are passkey-only (WebAuthn, user verification required), with no email or password. Session tokens are stored hashed.
 - API routes that move money require sign-in and a same-origin request. Public payment links are rate-limited.
-- The AI only sees what you type and your payees' names. A guard blocks addresses, keys and tokens before anything is sent to it.
+- Ask Zorro sends your question (or recording), balances, payee names, Autopays and recent payments to the AI service so it can answer. A guard blocks addresses, keys and tokens before anything is sent. It only drafts: every payment, swap and Autopay is confirmed by you on the normal screen.
 
 ## Privacy, honestly
 
@@ -106,7 +107,8 @@ npm run worker               # second terminal: runs payments, Autopay, payment 
 | `AGENT_API_KEY` | Wallets, payee approvals, payments, deposits (NEAR Intents **Agent API** key) |
 | `ONECLICK_API_KEY` | "Pay from another wallet" and prices (NEAR Intents **1Click** distribution-channel key) |
 | `ZORRO_ENCRYPTION_KEY` | Encrypting payment permissions: `openssl rand -base64 32` |
-| `DEEPSEEK_API_KEY` | Ask Zorro and the news brief (any OpenAI-compatible API) |
+| `SARVAM_API_KEY` | Ask Zorro voice (speech-to-text, text-to-speech) and chat (Sarvam AI) |
+| `DEEPSEEK_API_KEY` | Backup chat for Ask Zorro, and the news brief (any OpenAI-compatible API) |
 | `NEWS_API_KEY` | Zcash news (NewsAPI.org, or a NewsData.io `pub_…` key) |
 
 Optional: `DATABASE_URL`, `WORKER_TICK_MS` (default 5000), base-URL overrides (see `.env.example`).
@@ -125,7 +127,7 @@ src/app/                    screens
   landing/                  animated phone landing page
   pay/  pay/[id]/           Pay ("Sending money", slide to pay) and live receipts
   payees/ autopay/ request/ scan/ tracker/ ask/ news/ account/
-  wallet/setup  wallet/receive
+  wallet/setup  wallet/receive  wallet/swap
   r/[id]/                   public payment link (no account needed)
   swap/ orders/             pay from another wallet (1Click)
 src/app/api/                payees, pay/quote, payments, schedules, requests (+ public pay),
@@ -141,7 +143,10 @@ src/lib/agent-api.ts        typed NEAR Intents Agent API client
 src/lib/coins.ts            the 13 coins, address checks, payment URIs
 src/lib/scan.ts             payment-code parser (ZIP-321, EIP-681, Solana Pay, BIP-21)
 src/lib/rates.ts            coin prices (NEAR Intents) + USD→INR
-src/lib/ai.ts, ai-payments.ts   AI client with output validation and data guard
+src/lib/assistant.ts       Ask Zorro: context, actions (charts, drafts, screens), model + fallback
+src/lib/sarvam.ts          Sarvam AI: speech-to-text, text-to-speech, chat
+src/lib/history.ts         price history for charts (Kraken)
+src/lib/ai.ts              AI client with output validation and data guard
 src/lib/worker.ts           worker tick (scripts/worker.ts runs it every 5 s)
 src/components/             UI: money, SlideToConfirm, SpendChart, landing/, shell/ (tab bar)
 drizzle/                    database migrations
@@ -157,4 +162,4 @@ Coin and network logos: [@web3icons/core](https://github.com/0xa3k5/web3icons) (
 
 ## History
 
-Zorro started as a ZEC trading-bot app (stop-loss, DCA, grid). After feedback from the Zcash India team that the ecosystem sees ZEC as **private cash, not a trading asset**, it was rebuilt as a payments app. The bot code remains in git history. See [PLAN.md](PLAN.md) for the full design and decisions.
+Zorro started as a ZEC trading-bot app (stop-loss, DCA, grid). After feedback from the Zcash community that the ecosystem sees ZEC as **private cash, not a trading asset**, it was rebuilt as a payments app. The bot code remains in git history. See [PLAN.md](PLAN.md) for the full design and decisions.

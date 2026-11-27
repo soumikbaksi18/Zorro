@@ -163,7 +163,7 @@ export const payments = sqliteTable(
       .references(() => users.id, { onDelete: "cascade" }),
     agentId: text("agent_id").notNull(),
     direction: text("direction", { enum: ["out", "in"] }).notNull(),
-    kind: text("kind", { enum: ["pay", "transfer", "request", "deposit", "autopay"] }).notNull(),
+    kind: text("kind", { enum: ["pay", "transfer", "request", "deposit", "autopay", "swap"] }).notNull(),
     payeeId: text("payee_id"),
     scheduleId: text("schedule_id"),
     requestId: text("request_id"),

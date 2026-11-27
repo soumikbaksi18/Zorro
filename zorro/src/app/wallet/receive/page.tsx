@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { ReceiveFlow } from "./ReceiveFlow";
 
@@ -12,7 +13,9 @@ export default function ReceivePage() {
         lead="Get a one-time address for any coin. It lands in your private Zorro balance."
         back={{ href: "/", label: "Home" }}
       />
-      <ReceiveFlow />
+      <Suspense fallback={<div className="panel h-64 animate-pulse" />}>
+        <ReceiveFlow />
+      </Suspense>
     </>
   );
 }

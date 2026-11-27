@@ -15,7 +15,7 @@ export const PRIMARY_NAV: NavItem[] = [
 export function isActive(href: string, pathname: string | undefined): boolean {
   if (pathname === undefined) return false;
   if (href === "/") return pathname === "/";
-  if (href === "/pay") return ["/pay", "/payees", "/autopay", "/request", "/scan", "/swap", "/orders", "/ask"].some((p) => pathname.startsWith(p));
-  if (href === "/account") return pathname.startsWith("/account") || pathname.startsWith("/wallet");
+  if (href === "/pay") return ["/pay", "/payees", "/autopay", "/request", "/scan", "/swap", "/orders", "/ask", "/wallet/swap"].some((p) => pathname.startsWith(p));
+  if (href === "/account") return pathname.startsWith("/account") || pathname.startsWith("/wallet/setup");
   return pathname.startsWith(href);
 }

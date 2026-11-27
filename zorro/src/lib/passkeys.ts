@@ -133,7 +133,7 @@ export async function finishLogin(response: AuthenticationResponseJSON): Promise
     .from(schema.users)
     .where(eq(schema.users.passkeyCredentialId, response.id))
     .limit(1);
-  if (!user) throw new AuthError("This passkey isn't registered with Zorro.", 404);
+  if (!user) throw new AuthError("This passkey isn't linked to a Zorro account any more (it may be from an earlier test account). Pick your newest Zorro passkey, or create a new one.", 404);
 
   const verification = await verifyAuthenticationResponse({
     response,

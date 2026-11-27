@@ -30,8 +30,8 @@ const VISIBILITY = [
   },
   {
     icon: Sparkles,
-    title: "AI service",
-    body: "Only sees what you type and your payees' names. Zorro blocks addresses, balances, keys and tokens from being sent to it.",
+    title: "AI and voice (Sarvam AI)",
+    body: "When you use Ask Zorro, your question (or recording), balances, payee names, Autopays and recent payments are sent so it can answer. Zorro blocks addresses, keys and tokens from ever being sent. It can't move money: it only drafts.",
   },
 ];
 

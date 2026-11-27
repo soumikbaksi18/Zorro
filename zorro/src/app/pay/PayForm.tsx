@@ -8,6 +8,7 @@ import { useCurrency } from "@/lib/client-prefs";
 import { coin, displayAmount } from "@/lib/coins";
 import type { PaymentQuote } from "@/lib/payments";
 import type { PayeeView } from "@/lib/payees";
+import { Dropdown } from "@/components/Dropdown";
 import { SlideToConfirm } from "@/components/SlideToConfirm";
 import { coinName, useFiat } from "@/components/money";
 import { ErrorBox, Segmented } from "@/components/ui";
@@ -89,26 +90,28 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
               aria-label="Amount"
               className="tabular w-full min-w-0 bg-transparent text-[30px] leading-tight font-semibold tracking-[-0.03em] caret-brand-dark outline-none placeholder:text-brand-ink/30 focus-visible:outline-none"
             />
-            <select
+            <Dropdown
+              label="Currency of the amount"
+              variant="light"
               value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              aria-label="Currency of the amount"
-              className="shrink-0 rounded-full bg-white/70 px-3 py-2 text-sm font-semibold text-brand-ink outline-none"
-            >
-              <option value="INR">INR</option>
-              <option value="USD">USD</option>
-              <option value="COIN">{c.symbol}</option>
-            </select>
+              onChange={setCurrency}
+              className="w-[96px] shrink-0"
+              options={[
+                { value: "INR", label: "INR", hint: "₹" },
+                { value: "USD", label: "USD", hint: "$" },
+                { value: "COIN", label: c.symbol, hint: c.chainName },
+              ]}
+            />
           </div>
         </div>
 
-        <div className="my-2.5 flex justify-center">
-          <span className="grid h-9 w-9 place-items-center rounded-full border border-brand-ink/20 text-brand-ink/70" aria-hidden="true">
-            <ArrowDownUp size={16} />
+        <div className="relative z-10 -my-3 flex justify-center">
+          <span className="sheet-flip" aria-hidden="true">
+            <ArrowDownUp size={18} strokeWidth={2.2} />
           </span>
         </div>
 
-        <div className="sheet-box p-4 text-center" aria-live="polite" aria-busy={loading}>
+        <div className="sheet-box sheet-box-tint p-4 text-center" aria-live="polite" aria-busy={loading}>
           <p className="text-[13px] font-medium text-brand-ink/70">{payee.name} gets</p>
           <p className="tabular mt-1 text-[32px] leading-tight font-semibold tracking-[-0.03em]">
             {q ? displayAmount(q.amount) : loading ? "…" : "0"} <span className="text-lg">{c.symbol}</span>
@@ -123,9 +126,9 @@ export function PayForm({ payee, initialAmount, initialCurrency }: { payee: Paye
 
         <div className="mt-3 flex flex-wrap items-center gap-2 px-1 text-[12px] font-medium text-brand-ink/75">
           <span>Arrives as</span>
-          <span className="rounded-full bg-white/70 px-2.5 py-1 text-brand-ink">{coinName(c)}</span>
+          <span className="sheet-pill rounded-full px-2.5 py-1">{coinName(c)}</span>
           <span className="ml-1">in</span>
-          <span className="rounded-full bg-white/70 px-2.5 py-1 text-brand-ink">{payee.kind === "zorro" ? "seconds" : "~1–3 min"}</span>
+          <span className="sheet-pill rounded-full px-2.5 py-1">{payee.kind === "zorro" ? "seconds" : "~1–3 min"}</span>
         </div>
       </section>
 

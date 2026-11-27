@@ -51,7 +51,7 @@ export function Receipt({ id }: { id: string }) {
 
       <article className="receipt receipt-1" aria-label="Receipt">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-medium text-brand-ink/60">{out ? `Paid to ${p.counterparty}` : `From ${p.counterparty}`}</p>
+          <p className="text-sm font-medium text-brand-ink/60">{p.kind === "swap" ? p.counterparty : out ? `Paid to ${p.counterparty}` : `From ${p.counterparty}`}</p>
           <span className="rounded-full bg-brand-ink/8 px-2.5 py-1 text-xs font-medium text-brand-ink/70">{out ? `Paid in ${c.symbol}` : `Arrived as ${c.symbol}`}</span>
         </div>
         <p className="tabular mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em]">
@@ -96,7 +96,7 @@ export function Receipt({ id }: { id: string }) {
           </Row>
           {p.zecUsd && <Row label="ZEC price then">{fmt(p.zecUsd, p.inr && p.usd ? (p.zecUsd * p.inr) / p.usd : null)}</Row>}
           {p.feeUsd !== null && <Row label="Fees">≈ {fmt(p.feeUsd, p.inr && p.usd ? (p.feeUsd * p.inr) / p.usd : null)}</Row>}
-          <Row label="Type">{{ pay: "Payment", transfer: "Zorro transfer", autopay: "Autopay", request: "Payment link", deposit: "Added money" }[p.kind] ?? p.kind}</Row>
+          <Row label="Type">{{ pay: "Payment", transfer: "Zorro transfer", autopay: "Autopay", request: "Payment link", deposit: "Added money", swap: "Swap" }[p.kind] ?? p.kind}</Row>
           {p.note && <Row label="Note">{p.note}</Row>}
         </dl>
         {p.reference && (
@@ -110,7 +110,11 @@ export function Receipt({ id }: { id: string }) {
         <Link href="/" className="btn-secondary">
           Home
         </Link>
-        {out && p.kind !== "deposit" ? (
+        {p.kind === "swap" ? (
+          <Link href={`/wallet/swap?from=${p.fundCoinKey}&to=${p.coinKey}`} className="btn-primary">
+            <Repeat size={16} aria-hidden="true" /> Swap again
+          </Link>
+        ) : out && p.kind !== "deposit" ? (
           <Link href="/pay" className="btn-primary">
             <Repeat size={16} aria-hidden="true" /> Pay again
           </Link>
@@ -136,8 +140,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function Steps({ p }: { p: PaymentView }) {
   const steps = [
     ...(p.steps?.needsSwap ? [{ key: "converting", label: `Convert ${coin(p.fundCoinKey).symbol} to ${coin(p.coinKey).symbol}` }] : []),
-    { key: "sending", label: p.steps?.route === "transfer" ? "Send to their Zorro wallet" : `Send on ${coin(p.coinKey).chainName}` },
-    { key: "done", label: "Delivered" },
+    ...(p.steps?.route === "swap"
+      ? []
+      : [{ key: "sending", label: p.steps?.route === "transfer" ? "Send to their Zorro wallet" : `Send on ${coin(p.coinKey).chainName}` }]),
+    { key: "done", label: p.steps?.route === "swap" ? `${coin(p.coinKey).symbol} in your wallet` : "Delivered" },
   ];
   const order = ["queued", ...steps.map((s) => s.key)];
   const at = p.status === "failed" || p.status === "review" ? -1 : order.indexOf(p.status);

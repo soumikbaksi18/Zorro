@@ -4,19 +4,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowDownLeft,
+  ArrowLeftRight,
   ArrowUpRight,
   Bell,
   Eye,
   EyeOff,
   HandCoins,
-  Plus,
   ReceiptText,
   Repeat,
   ScanLine,
   Send,
   ShieldCheck,
   Sparkles,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api-client";
@@ -25,7 +24,7 @@ import { useHideBalance } from "@/lib/client-prefs";
 import { findCoin } from "@/lib/coins";
 import type { PaymentView } from "@/lib/payments";
 import type { WalletBalances } from "@/lib/wallet-service";
-import { BigFiat, CoinBadge, coinName, useFiat, useNow, when } from "@/components/money";
+import { BigFiat, CoinBadge, useFiat, useNow, when } from "@/components/money";
 import { BrandMark } from "@/components/shell/Brand";
 import { Landing } from "@/components/landing/Landing";
 
@@ -36,7 +35,7 @@ const ACTIONS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/request", label: "Request", icon: HandCoins },
   { href: "/scan", label: "Scan", icon: ScanLine },
   { href: "/autopay", label: "Autopay", icon: Repeat },
-  { href: "/payees", label: "Payees", icon: Users },
+  { href: "/wallet/swap", label: "Swap", icon: ArrowLeftRight },
   { href: "/wallet/receive", label: "Add money", icon: ArrowDownLeft },
   { href: "/tracker", label: "Tracker", icon: ReceiptText },
   { href: "/ask", label: "Ask AI", icon: Sparkles },
@@ -106,15 +105,41 @@ function Greeting({ handle, alerts }: { handle: string | null; alerts: number })
         <Link href="/account" aria-label="Account">
           <BrandMark size={46} />
         </Link>
-        <Link href={alerts ? "/payees" : "/tracker"} aria-label={alerts ? `${alerts} payees waiting for approval` : "Payment tracker"} className="icon-btn relative">
-          <Bell size={19} strokeWidth={1.7} aria-hidden="true" />
-          {alerts > 0 && <span className="absolute top-2.5 right-3 h-2 w-2 rounded-full bg-gold ring-2 ring-ink" />}
-        </Link>
+        <div className="flex items-center gap-3">
+          <PoweredByNear />
+          <Link href={alerts ? "/payees" : "/tracker"} aria-label={alerts ? `${alerts} payees waiting for approval` : "Payment tracker"} className="icon-btn relative">
+            <Bell size={19} strokeWidth={1.7} aria-hidden="true" />
+            {alerts > 0 && <span className="absolute top-2.5 right-3 h-2 w-2 rounded-full bg-gold ring-2 ring-ink" />}
+          </Link>
+        </div>
       </div>
       <h2 className="page-title mt-5">{handle ? `Hi, @${handle}` : "Your wallet"}</h2>
     </header>
   );
 }
+
+/** "Powered by NEAR Intents", small and quiet in the top-right corner. */
+export function PoweredByNear() {
+  return (
+    <a href="https://near-intents.org" target="_blank" rel="noopener noreferrer" className="text-right leading-none text-snow/45 hover:text-snow/70" aria-label="Powered by NEAR Intents">
+      <span className="block text-[10px] font-medium">Powered by</span>
+      <span className="mt-0.5 block text-[15px] tracking-[-0.03em]">
+        <strong className="font-bold">near</strong> <span className="font-medium">Intents</span>
+      </span>
+    </a>
+  );
+}
+
+// Asset boxes under the main card. The first three always show; the rest only when you hold them.
+const ASSET_BOXES: { symbol: string; keys: string[]; always: boolean }[] = [
+  { symbol: "ZEC", keys: ["zec"], always: true },
+  { symbol: "USDC", keys: ["usdc-base", "usdc-sol", "usdc-eth", "usdc-arb"], always: true },
+  { symbol: "SOL", keys: ["sol"], always: true },
+  { symbol: "USDT", keys: ["usdt-tron", "usdt-eth", "usdt-sol"], always: false },
+  { symbol: "ETH", keys: ["eth", "eth-base"], always: false },
+  { symbol: "BTC", keys: ["btc"], always: false },
+  { symbol: "NEAR", keys: ["near"], always: false },
+];
 
 function Balance({ data, error }: { data: HomeData | null; error: string | null }) {
   const { currency, fmt } = useFiat();
@@ -122,7 +147,18 @@ function Balance({ data, error }: { data: HomeData | null; error: string | null 
   const b = data?.balances;
   const total = b ? (currency === "INR" ? b.totalInr : b.totalUsd) : null;
   const zec = b?.coins.find((c) => c.key === "zec");
-  const others = b?.coins.filter((c) => c.key !== "zec") ?? [];
+  const boxes = ASSET_BOXES.map((box) => {
+    const held = (b?.coins ?? []).filter((c) => box.keys.includes(c.key));
+    const amount = held.reduce((s, c) => s + Number(c.amount), 0);
+    return {
+      ...box,
+      amount,
+      usd: held.reduce((s, c) => s + (c.usd ?? 0), 0),
+      inr: held.reduce((s, c) => s + (c.inr ?? 0), 0),
+      // the chain holding most of it, so Swap / Add money open on the right coin
+      key: held.sort((x, y) => Number(y.amount) - Number(x.amount))[0]?.key ?? box.keys[0],
+    };
+  }).filter((box) => box.always || box.amount > 0);
 
   return (
     <section aria-labelledby="balance-heading" className="flex flex-col gap-4">
@@ -150,32 +186,30 @@ function Balance({ data, error }: { data: HomeData | null; error: string | null 
         </div>
       </article>
 
-      <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
-        {others.map((c) => (
-          <CoinCard key={c.key} coin={c} hidden={hidden} fiat={fmt(c.usd, c.inr)} />
+      <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1" aria-label="Balances by asset">
+        {boxes.map((box) => (
+          <Link
+            key={box.symbol}
+            href={box.amount > 0 ? `/wallet/swap?from=${box.key}` : `/wallet/receive?coin=${box.key}`}
+            className="glass-card-dark flex h-[124px] w-[150px] shrink-0 snap-start flex-col justify-between p-4 transition-transform hover:-translate-y-0.5"
+          >
+            <span className="flex items-center gap-2">
+              <CoinBadge coinKey={box.keys[0]} size={28} showChain={false} />
+              <span className="text-[13px] font-semibold">{box.symbol}</span>
+              <span className="ml-auto text-[10px] text-snow/45">{box.amount > 0 ? "Swap" : "Add"}</span>
+            </span>
+            <span>
+              <span className="tabular block truncate text-[19px] leading-tight font-semibold tracking-[-0.02em]">
+                {!b ? "…" : hidden ? "••••" : fmt(box.usd, box.inr)}
+              </span>
+              <span className="tabular mt-0.5 block truncate text-[11px] text-snow/55">
+                {!b ? "" : hidden ? "••••" : `${box.amount.toLocaleString("en-US", { maximumFractionDigits: box.symbol === "BTC" ? 8 : 6 })} ${box.symbol}`}
+              </span>
+            </span>
+          </Link>
         ))}
-        <Link
-          href="/wallet/receive"
-          className="flex h-[76px] shrink-0 snap-start items-center gap-3 rounded-[22px] border border-dashed border-line-strong px-5 text-sm text-muted hover:border-brand hover:text-snow"
-        >
-          <Plus size={18} aria-hidden="true" />
-          Add money
-        </Link>
       </div>
     </section>
-  );
-}
-
-function CoinCard({ coin: c, hidden, fiat }: { coin: WalletBalances["coins"][number]; hidden: boolean; fiat: string }) {
-  const meta = findCoin(c.key);
-  return (
-    <article className="glass-card-dark flex h-[76px] w-[190px] shrink-0 snap-start items-center gap-3 px-4">
-      <CoinBadge coinKey={c.key} size={34} />
-      <div className="min-w-0">
-        <p className="tabular truncate text-[15px] font-semibold">{hidden ? "••••" : fiat}</p>
-        <p className="tabular truncate text-[11px] text-snow/60">{hidden ? "••••" : `${Number(c.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ${coinName(meta)}`}</p>
-      </div>
-    </article>
   );
 }
 
@@ -244,7 +278,7 @@ export function PaymentRow({ p, highlight = false }: { p: PaymentView; highlight
   const now = useNow();
   const c = findCoin(p.coinKey);
   const out = p.direction === "out";
-  const kindLabel = { pay: "Payment", transfer: "Zorro transfer", autopay: "Autopay", request: "Payment link", deposit: "Added" }[p.kind] ?? p.kind;
+  const kindLabel = { pay: "Payment", transfer: "Zorro transfer", autopay: "Autopay", request: "Payment link", deposit: "Added", swap: "Swap" }[p.kind] ?? p.kind;
   return (
     <Link
       href={`/pay/${p.id}`}

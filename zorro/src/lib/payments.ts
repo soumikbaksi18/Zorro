@@ -24,7 +24,7 @@ import {
   type Operation,
 } from "./agent-api";
 import { AgentError, agentWithGrant } from "./agent-service";
-import { ZEC_COIN, ceilDecimal, coin, fromUnits, toUnits, type Coin } from "./coins";
+import { COIN_KEYS, ZEC_COIN, ceilDecimal, coin, fromUnits, toUnits, type Coin } from "./coins";
 import { decryptSecret, newIdempotencyKey } from "./crypto";
 import { payeeFor, type PayeeView } from "./payees";
 import { getRates, priceOf, toUsd, type Rates } from "./rates";
@@ -50,7 +50,7 @@ type Plan = {
   fundUnits: string; // what leaves the wallet in the funding coin
   needsSwap: boolean;
   minOutUnits: string | null;
-  route: "withdraw" | "transfer";
+  route: "withdraw" | "transfer" | "swap"; // "swap" = convert inside the wallet, nothing is sent out
   chain: string;
   recipient: string;
 };
@@ -236,6 +236,142 @@ export async function recordFailedPayment(
   });
 }
 
+// ---------- Swap inside the wallet (ZEC → USDC, SOL, ETH…) ----------
+
+export const ConvertInputSchema = z.object({
+  from: z.enum(COIN_KEYS),
+  to: z.enum(COIN_KEYS),
+  amount: z.string().trim().regex(/^\d+(\.\d+)?$/, "Enter an amount"),
+  /** The amount is in the "from" coin, or in INR/USD worth of it. */
+  amountIn: z.enum(["COIN", "INR", "USD"]).default("COIN"),
+});
+export type ConvertInput = z.infer<typeof ConvertInputSchema>;
+
+export type ConvertQuote = {
+  from: string;
+  to: string;
+  fromAmount: string;
+  toAmount: string; // expected
+  minToAmount: string; // never less than this (1% slippage)
+  usd: number;
+  inr: number;
+  feeUsd: number | null;
+  rate: number; // "to" per one "from"
+  zecUsd: number;
+  balance: string; // of the "from" coin
+  problems: string[];
+  notes: string[];
+  plan: Plan;
+};
+
+const SWAP_SLIPPAGE_BPS = BigInt(100);
+
+export async function quoteConvert(user: CurrentUser, input: ConvertInput): Promise<ConvertQuote> {
+  if (input.from === input.to) throw new AgentError("Pick two different coins.");
+  const { agent, grantToken } = await agentWithGrant(user);
+  const from = coin(input.from);
+  const to = coin(input.to);
+  const rates = await getRates().catch(() => {
+    throw new AgentError("Prices are unavailable right now. Try again in a minute.", 503);
+  });
+
+  let fromAmount: string;
+  try {
+    fromAmount = input.amountIn === "COIN" ? input.amount : ceilDecimal(toUsd(rates, Number(input.amount), input.amountIn) / priceOf(rates, from), from.decimals);
+  } catch (e) {
+    throw new AgentError(e instanceof Error ? e.message : "No price for this coin", 503);
+  }
+  const fundUnits = toUnits(fromAmount, from.decimals);
+  if (BigInt(fundUnits) <= BigInt(0)) throw new AgentError("Enter an amount above zero.");
+
+  const problems: string[] = [];
+  const notes: string[] = [];
+  let outUnits = "0";
+  let feeUsd: number | null = null;
+  try {
+    const q = await quoteAgentSwap(agent.id, { origin_asset: from.assetId, destination_asset: to.assetId, amount: fundUnits }, grantToken);
+    outUnits = q.quote.amount_out ?? "0";
+    feeUsd = q.fee?.amount_usd ? Number(q.fee.amount_usd) : null;
+    for (const w of q.warnings) {
+      if (w.code === "insufficient_balance") continue; // checked below with a clearer message
+      (NON_BLOCKING.has(w.code) ? notes : problems).push(friendlyCode(w.code, from.symbol));
+    }
+  } catch (e) {
+    problems.push(explain(e, from.symbol).message);
+  }
+
+  let balance = "0";
+  try {
+    const { balances } = await getBalances(agent.id);
+    const have = BigInt(balances.find((b) => b.asset_id === from.assetId)?.balance_raw ?? "0");
+    balance = fromUnits(have.toString(), from.decimals);
+    if (have < BigInt(fundUnits)) problems.push(`You have ${balance} ${from.symbol}. Add funds or swap less.`);
+  } catch {
+    notes.push("Couldn't check your balance just now.");
+  }
+
+  const minOut = (BigInt(outUnits) * (BigInt(10_000) - SWAP_SLIPPAGE_BPS)) / BigInt(10_000);
+  const usd = toUsd(rates, Number(fromAmount), "COIN", from);
+  const toAmount = fromUnits(outUnits, to.decimals);
+  return {
+    from: from.key,
+    to: to.key,
+    fromAmount,
+    toAmount,
+    minToAmount: fromUnits(minOut.toString(), to.decimals),
+    usd,
+    inr: usd * rates.usdInr,
+    feeUsd,
+    rate: Number(fromAmount) > 0 ? Number(toAmount) / Number(fromAmount) : 0,
+    zecUsd: rates.zecUsd,
+    balance,
+    problems: [...new Set(problems)],
+    notes,
+    plan: {
+      coinKey: to.key,
+      targetUnits: outUnits,
+      sendUnits: outUnits,
+      fundCoinKey: from.key,
+      fundUnits,
+      needsSwap: true,
+      minOutUnits: minOut.toString(),
+      route: "swap",
+      chain: "",
+      recipient: "",
+    },
+  };
+}
+
+export async function createConvert(user: CurrentUser, input: ConvertInput): Promise<{ id: string }> {
+  const quote = await quoteConvert(user, input);
+  if (quote.problems.length) throw new AgentError(quote.problems[0], 409);
+  if (BigInt(quote.plan.targetUnits) <= BigInt(0)) throw new AgentError("NEAR Intents couldn't quote this swap. Try another amount.", 409);
+  const { agent } = await agentWithGrant(user);
+  const from = coin(quote.from);
+  const to = coin(quote.to);
+  const id = randomUUID();
+  await db.insert(schema.payments).values({
+    id,
+    userId: user.id,
+    agentId: agent.id,
+    direction: "out",
+    kind: "swap",
+    counterparty: `Swap ${from.symbol} → ${to.symbol}`,
+    coinKey: to.key,
+    amount: quote.toAmount,
+    fundCoinKey: from.key,
+    fundAmount: quote.fromAmount,
+    usdValue: quote.usd,
+    inrValue: quote.inr,
+    feeUsd: quote.feeUsd,
+    zecUsd: quote.zecUsd,
+    reference: newReference(),
+    status: "queued",
+    state: { plan: quote.plan },
+  });
+  return { id };
+}
+
 // ---------- Run (worker) ----------
 
 type State = {
@@ -297,7 +433,17 @@ async function step(row: PaymentRow, log: (msg: string) => void) {
       if (op?.status === "NEEDS_REVIEW") await save(row, { status: "review", error: "The conversion needs review by NEAR Intents. Nothing was sent to the payee." });
       return;
     }
-    if (op.status !== "SUCCESS") return fail(row, "The conversion didn't go through, so nothing was sent. Your ZEC stays in your wallet.");
+    if (op.status !== "SUCCESS") {
+      return fail(row, plan.route === "swap" ? `The swap didn't go through. Your ${coin(plan.fundCoinKey).symbol} stays in your wallet.` : "The conversion didn't go through, so nothing was sent. Your ZEC stays in your wallet.");
+    }
+    if (plan.route === "swap") {
+      // An in-wallet swap ends here. Record what actually arrived when NEAR Intents reports it.
+      const out = (op.details as { amount_out?: unknown } | undefined)?.amount_out;
+      const amount = typeof out === "string" && /^\d+$/.test(out) ? fromUnits(out, coin(plan.coinKey).decimals) : row.amount;
+      await save(row, { status: "done", amount, completedAt: new Date(), error: null });
+      log(`payment ${row.reference}: swap done`);
+      return;
+    }
     const key = state.sendKey ?? newIdempotencyKey("psend");
     await save(row, { status: "sending", state: { ...state, sendKey: key } });
     log(`payment ${row.reference}: converted, sending to ${row.counterparty}`);
@@ -451,7 +597,7 @@ export type PaymentView = {
   createdAt: string;
   completedAt: string | null;
   scheduleId: string | null;
-  steps: { needsSwap: boolean; route: "withdraw" | "transfer" } | null;
+  steps: { needsSwap: boolean; route: "withdraw" | "transfer" | "swap" } | null;
 };
 
 export function paymentView(r: PaymentRow): PaymentView {
@@ -517,6 +663,7 @@ export async function monthSummary(user: CurrentUser, now = new Date()): Promise
   const s: MonthSummary = { month: start.toISOString().slice(0, 7), sentUsd: 0, sentInr: 0, receivedUsd: 0, receivedInr: 0, zecSpent: 0, feesUsd: 0, count: rows.length, byCoin: [] };
   const byCoin = new Map<string, { amount: number; usd: number }>();
   for (const r of rows) {
+    if (r.kind === "swap") continue; // conversions inside the wallet aren't spending
     if (r.direction === "out") {
       s.sentUsd += r.usdValue ?? 0;
       s.sentInr += r.inrValue ?? 0;
@@ -547,7 +694,7 @@ export async function ledgerCsv(user: CurrentUser): Promise<string> {
     const c = coin(r.coinKey);
     return [
       r.createdAt,
-      r.direction === "out" ? "sent" : "received",
+      r.kind === "swap" ? "swap" : r.direction === "out" ? "sent" : "received",
       r.counterparty,
       r.amount,
       c.symbol,

@@ -23,7 +23,7 @@ function readCurrency(): Currency {
   return localStorage.getItem(CURRENCY_KEY) === "USD" ? "USD" : "INR";
 }
 
-/** Display currency. Defaults to INR (Zorro is built for Zcash India). */
+/** Display currency (INR or USD). Defaults to INR. */
 export function useCurrency(): [Currency, (next: Currency) => void] {
   const currency = useSyncExternalStore(subscribe, readCurrency, () => "INR" as Currency);
   const setCurrency = (next: Currency) => {

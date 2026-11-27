@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CircleCheck } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAccount } from "@/lib/account-client";
-import { coin, paymentUri, toUnits } from "@/lib/coins";
+import { coin, findCoin, paymentUri, toUnits } from "@/lib/coins";
 import type { DepositInfo } from "@/lib/wallet-service";
 import { CoinPicker } from "@/components/CoinPicker";
 import { coinName, StatusBadge } from "@/components/money";
@@ -14,7 +15,8 @@ import { PasskeyGate } from "@/components/wallet/PasskeyGate";
 
 export function ReceiveFlow() {
   const account = useAccount();
-  const [coinKey, setCoinKey] = useState("zec");
+  const params = useSearchParams();
+  const [coinKey, setCoinKey] = useState(findCoin(params.get("coin") ?? "")?.key ?? "zec");
   const [deposit, setDeposit] = useState<DepositInfo | null>(null);
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<string | null>(null);

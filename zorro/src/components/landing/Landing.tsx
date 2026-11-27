@@ -71,7 +71,7 @@ function Hero() {
             <span className="anim-ring absolute inset-0 rounded-full bg-brand" />
             <span className="relative h-2 w-2 rounded-full bg-brand" />
           </span>
-          Built for Zcash India
+          Private cash for Zcash
         </p>
       </Reveal>
       <Reveal delay={100}>
@@ -516,7 +516,7 @@ function FinalCta() {
         )}
       </Reveal>
       <footer className="mt-14 flex flex-col items-center gap-1 text-center text-[11px] text-snow/40">
-        <span>Built for the Zcash India &ldquo;Build on Zcash&rdquo; bounty</span>
+        <span>Zorro · private cash for Zcash</span>
         <span>Powered by NEAR Intents · Zorro never holds your passkey</span>
       </footer>
     </section>
